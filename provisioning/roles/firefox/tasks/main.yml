@@ -1,8 +1,20 @@
 ---
+- name: Set firefox_pkg based on distribution
+  ansible.builtin.set_fact:
+    firefox_pkg: "{{ 'firefox-esr' if ansible_distribution == 'Kali' else 'firefox' }}"
+  tags: firefox
+
 - name: Set firefox_profile_directory
   ansible.builtin.set_fact:
     firefox_profile_directory: "{{ vm_user_details.home }}/.mozilla/firefox/oanmuaxw.default-esr"
   when: firefox_profile_directory is undefined
+  tags: firefox
+
+- name: Install probably missing packages
+  apt:
+    pkg: "{{ firefox_pkg }}"
+    state: latest
+  tags: firefox
 
 - name: Create directories
   ansible.builtin.file:

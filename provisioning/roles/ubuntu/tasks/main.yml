@@ -22,7 +22,6 @@
     pkg:
       - apache2
       - dbus-x11
-      - firefox
       - fish
       - fzf
       - htop
@@ -38,14 +37,6 @@
       - zsh
     state: latest
   tags: packages
-
-- name: Install Chromium
-  snap:
-    name:
-      - chromium
-  tags: 
-    - chromium
-
 
 - name: Remove unwanted packages
   apt:
