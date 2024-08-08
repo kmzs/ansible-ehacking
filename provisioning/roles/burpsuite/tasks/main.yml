@@ -1,0 +1,126 @@
+---
+- name: Install package dependencies
+  apt:
+    pkg:
+      - default-jre
+      - libfontconfig1
+      - libfreetype6
+      - python3-defusedxml
+      - python3-pexpect
+    state: present
+  tags: system-ubuntu
+
+- name: Download installer (x86_64)
+  ansible.builtin.get_url:
+    url: "https://portswigger.net/burp/releases/download?product=community&type=linux"
+    dest: "/tmp/burp.sh"
+    mode: '0640'
+  tags: system-ubuntu
+  when: ansible_architecture == "x86_64"
+
+- name: Download installer (aarch64)
+  ansible.builtin.get_url:
+    url: "https://portswigger.net/burp/releases/download?product=community&type=linuxArm64"
+    dest: "/tmp/burp.sh"
+    mode: '0640'
+  tags: system-ubuntu
+  when: ansible_architecture == "aarch64"
+
+- name: Install
+  ansible.builtin.command:
+    cmd: "/bin/sh /tmp/burp.sh -q -varfile '{{ config_dir }}/burpsuite_response.varfile' -overwrite"
+    chdir: /tmp
+    creates: "/usr/local/BurpSuiteCommunity"
+  tags: system-ubuntu
+
+- name: Create symbolic link
+  ansible.builtin.file:
+    src: /usr/local/bin/BurpSuiteCommunity
+    dest: /usr/bin/burpsuite
+    state: link
+  tags: system-ubuntu
+
+- name: Find JAR file
+  find:
+    paths: /
+    patterns: '*burpsuite*.jar'
+    recurse: yes
+  register: burpsuite_jar_search
+
+- name: Set JAR path as a fact
+  set_fact:
+    burpsuite_jar: "{{ burpsuite_jar_search.files[0].path }}"
+  when: burpsuite_jar_search.matched > 0
+
+- name: Copy configuration to {{ vm_user_details.home }}
+  ansible.builtin.copy:
+    src: "{{ config_dir }}/.BurpSuite"
+    remote_src: yes
+    dest: '{{ vm_user_details.home }}/'
+    owner: "{{ vm_user }}"
+    group: "{{ vm_user_details.group }}"
+    mode: '0755'
+  tags: burpsuite
+
+- name: Copy further configuration in .BurpSuite from template
+  ansible.builtin.template:
+    src: "{{ item }}"
+    remote_src: yes
+    dest: "{{ vm_user_details.home }}/.BurpSuite/{{ item | basename | regex_replace('\\.j2$', '') }}"
+    owner: "{{ vm_user }}"
+    group: "{{ vm_user_details.group }}"
+    mode: '0755'
+  loop: "{{ query('fileglob', '{{ config_dir }}/templates/.BurpSuite/*.j2') }}"
+  tags: burpsuite
+
+- name: Configure and Accept Terms
+  become: yes
+  become_user: "{{ vm_user }}"
+  ansible.builtin.command:
+    cmd: |
+      python3 {{ vm_user_details.home }}/.BurpSuite/burp-accept-terms-and-conditions-and-download-ca-cert.py
+    creates: "{{ vm_user_details.home }}/Downloads/Burpsuite-CA-certificate.pem"
+  tags: burpsuite
+
+- name: Find temporary projects
+  find:
+    paths: /tmp
+    patterns: 'burp*.tmp'
+    recurse: yes
+  register: found_items
+  tags: burpsuite
+
+- name: Clean up the temporary projects
+  file:
+    path: "{{ item.path }}"
+    state: absent
+  loop: "{{ found_items.files }}"
+  tags: burpsuite
+
+- name: Copy Burpsuite-CA-certificate.pem into System Trust Store
+  ansible.builtin.copy:
+    src: "{{ vm_user_details.home }}/Downloads/Burpsuite-CA-certificate.pem"
+    remote_src: yes
+    dest: /usr/local/share/ca-certificates/
+    owner: root
+    group: root
+    mode: '0644'
+  notify:
+    - update CA certificates
+    - chromium update certificates
+    - firefox update certificates
+  tags: burpsuite
+
+# - name: Create Burpsuite Application Launcher
+#   ansible.builtin.copy:
+#     src: '{{ config_dir }}/applications/kali-burpsuite.desktop'
+#     remote_src: yes
+#     dest: "{{ item }}"
+#     owner: "{{ vm_user }}"
+#     group: "{{ vm_user_details.group }}"
+#     mode: '0755'
+#   loop:
+#     - "{{ vm_user_details.home }}/Desktop/"
+#     - "{{ vm_user_details.home }}/.local/share/applications/"
+#   notify: trust desktop files
+#   tags: burpsuite

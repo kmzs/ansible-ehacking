@@ -1,0 +1,114 @@
+---
+- name: Update apt cache
+  apt:
+    update_cache: yes
+    cache_valid_time: 86400  # One day in seconds
+  tags: update
+
+- name: Update all packages
+  apt:
+    upgrade: safe
+    cache_valid_time: 86400  # One day in seconds
+  tags: update
+
+- name: Update all packages to the latest version
+  apt:
+    upgrade: dist
+    cache_valid_time: 86400  # One day in seconds
+  tags: upgrade
+
+- name: Install probably missing packages
+  apt:
+    pkg:
+      - apache2
+      - dbus-x11
+      - firefox
+      - fish
+      - fzf
+      - htop
+      - libnss3-tools
+      - python3
+      - python3-psutil
+      - ripgrep
+      - thunderbird
+      - tldr
+      - tmux
+      - wget
+      - vim
+      - zsh
+    state: latest
+  tags: packages
+
+- name: Install Chromium
+  snap:
+    name:
+      - chromium
+  tags: 
+    - chromium
+
+
+- name: Remove unwanted packages
+  apt:
+    pkg:
+      - gnome-initial-setup
+    state: absent
+  tags: packages
+
+
+- name: Ensure the locale {{ config_system_locale }} exists
+  locale_gen:
+    name: "{{ config_system_locale }}"
+    state: present
+  tags: system
+
+- name: Get current locale and language configuration
+  command: localectl status
+  register: locale_status
+  changed_when: false
+  tags: system
+
+- name: Set {{ config_system_locale }} as default locale
+  command: localectl set-locale LANG={{ config_system_locale }} LANGUAGE={{ config_system_locale }}
+  tags: system
+
+- name: Set timezone to {{ config_system_timezone }}
+  timezone:
+    name: "{{ config_system_timezone }}"
+  tags: system
+
+- name: Change keyboard layout in /etc/default/keyboard to {{ config_keyboard_layout }}
+  lineinfile:
+    path: /etc/default/keyboard
+    regexp: '^XKBLAYOUT="us"'
+    line: XKBLAYOUT="{{ config_keyboard_layout }}"
+  tags: system
+
+- name: Remove dependencies that are no longer required
+  apt:
+    autoremove: yes
+  tags: clean
+
+- name: Remove useless packages from the cache
+  apt:
+    autoclean: yes
+  tags: clean
+
+  # - name: Clean apt deb file cache
+  #   apt:
+  #     clean: yes
+  #   tags: clean
+
+- name: Create {{ vm_user }} user
+  ansible.builtin.user:
+    name: "{{ vm_user }}"
+    # password: "{{ 'kali' | string | password_hash('sha512') }}"
+    password: '$6$MCGNSn5FNKeOmOiT$RnFNfpslJK9Zaz2W2tWw/.Q/B1mFcA.7VMjlQMXZPvh7ar6rGSKE17FehHe3O./6cZioAyIgxC37B3j7giaXJ0'
+    comment: "{{ vm_user }} (Default for eHacking)"
+    groups: sudo
+    shell: /usr/bin/bash
+  tags: system
+
+- name: Get user details
+  ansible.builtin.user:
+    name: "{{ vm_user }}"
+  register: vm_user_details

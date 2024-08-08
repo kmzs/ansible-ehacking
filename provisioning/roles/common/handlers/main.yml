@@ -1,0 +1,4 @@
+---
+- name: update CA certificates
+  ansible.builtin.command: 
+    cmd: update-ca-certificates

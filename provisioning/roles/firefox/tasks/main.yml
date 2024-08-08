@@ -1,0 +1,41 @@
+---
+- name: Set firefox_profile_directory
+  ansible.builtin.set_fact:
+    firefox_profile_directory: "{{ vm_user_details.home }}/.mozilla/firefox/oanmuaxw.default-esr"
+  when: firefox_profile_directory is undefined
+
+- name: Create directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ vm_user }}"
+    group: "{{ vm_user_details.group }}"
+    mode: '0755'
+  loop:
+    - "{{ vm_user_details.home }}/.mozilla/certificates"
+    # - /etc/firefox/policies
+  tags: firefox
+
+- name: Extract configuration
+  ansible.builtin.unarchive:
+    src: "{{ config_dir }}/firefox.tar.gz"
+    dest: "{{ vm_user_details.home }}/.mozilla/"
+    remote_src: yes
+    creates: "{{ firefox_profile_directory }}"
+  tags: firefox
+
+- name: Create the Firefox certificate database if it does not exist
+  ansible.builtin.command: >
+    bash -c "certutil -N -d sql:{{ firefox_profile_directory }} -f /dev/null"
+  args:
+    creates: "{{ firefox_profile_directory }}/cert9.db"
+
+# - name: Create policies.json from template
+#   ansible.builtin.template:
+#     src: "{{ config_dir }}/templates/etc_firefox_policies/policies.json.j2"
+#     remote_src: yes
+#     dest: "/etc/firefox/policies/policies.json"
+#     mode: '0644'
+#     owner: "root"
+#     group: "root"
+#   tags: firefox

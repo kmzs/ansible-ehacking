@@ -1,0 +1,46 @@
+---
+- name: Create User Application directory
+  ansible.builtin.file:
+    path: '{{ vm_user_details.home }}/.local/share/applications/'
+    state: 'directory'
+    mode: '0755'
+    owner: "{{ vm_user }}"
+    group: "{{ vm_user_details.group }}"
+  tags: system
+
+- name: Create Desktop directory
+  ansible.builtin.file:
+    path: '{{ vm_user_details.home }}/Desktop'
+    state: 'directory'
+    mode: '0755'
+    owner: "{{ vm_user }}"
+    group: "{{ vm_user_details.group }}"
+  tags: system
+
+- name: Create Downloads directory
+  ansible.builtin.file:
+    path: '{{ vm_user_details.home }}/Downloads'
+    state: 'directory'
+    mode: '0755'
+    owner: "{{ vm_user }}"
+    group: "{{ vm_user_details.group }}"
+  tags: system
+
+- name: Copy configuration files to Desktop
+  ansible.builtin.copy:
+    src: '{{ config_dir }}/Desktop/'
+    remote_src: yepwd
+    dest: '{{ vm_user_details.home }}/Desktop/'
+    owner: "{{ vm_user }}"
+    group: "{{ vm_user_details.group }}"
+    mode: '0755'
+  notify: trust desktop files
+  tags: system
+
+- name: Set favorite apps
+  community.general.dconf:
+    key: "/org/gnome/shell/favorite-apps"
+    value: "['org.gnome.Terminal.desktop', 'org.gnome.Nautilus.desktop', 'firefox_firefox.desktop', 'chromium_chromium.desktop', 'install4j_18rmkj0-BurpSuiteCommunity.desktop', 'starter.desktop', 'code.desktop']"
+    state: present
+  become: yes
+  become_user: "{{ vm_user }}"

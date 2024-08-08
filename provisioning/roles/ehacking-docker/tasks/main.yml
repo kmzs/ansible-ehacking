@@ -1,0 +1,101 @@
+---
+- name: Install docker
+  apt:
+    pkg:
+      - docker.io
+      - docker-compose
+    state: latest
+  tags: eHacking_vm
+
+- name:  Adding user '{{ vm_user }}' to group docker
+  user:
+    name: '{{ vm_user }}'
+    groups: docker
+    append: yes
+
+- name: Add mappings to /etc/hosts
+  ansible.builtin.blockinfile:
+    path: /etc/hosts
+    block: |
+      {{ item.ip }} {{ item.name }}
+    marker: "# {mark} ANSIBLE MANAGED BLOCK {{ item.name }}"
+  loop:
+    - { name: attacker.com, ip: 127.0.0.1 }
+    - { name: honest-idp.com, ip: 127.0.0.1 }
+    - { name: honest-rs.com, ip: 127.0.0.1 }
+    - { name: honest-sp.com, ip: 127.0.0.1 }
+    - { name: honest-spa.com, ip: 127.0.0.1 }
+    - { name: malicious.com, ip: 172.17.0.1 }
+  tags: eHacking_vm
+
+- name: Create Application Launcher from template
+  ansible.builtin.template:
+    src: '{{ config_dir }}/templates/applications/starter.desktop.j2'
+    remote_src: yes
+    dest: "{{ item }}"
+    owner: "{{ vm_user }}"
+    group: "{{ vm_user_details.group }}"
+    mode: '0755'
+  loop:
+    - "{{ vm_user_details.home }}/Desktop/starter.desktop"
+    - "{{ vm_user_details.home }}/.local/share/applications/starter.desktop"
+  notify: trust desktop files
+  tags: eHacking_vm
+
+- name: Copy configuration {{ vm_user_details.home }}/.hidden
+  ansible.builtin.copy:
+    src: "{{ config_dir }}/.hidden"
+    remote_src: yes
+    dest: "{{ vm_user_details.home }}/"
+    owner: "{{ vm_user }}"
+    group: "{{ vm_user_details.group }}"
+    mode: '0755'
+  tags: eHacking_vm
+
+- name: Create Docker Compose File from Template
+  ansible.builtin.template:
+    src: "{{ config_dir }}/templates/.hidden/docker-compose.yml.j2"
+    remote_src: yes
+    dest: "{{ vm_user_details.home }}/.hidden/docker-compose.yml"
+    owner: "{{ vm_user }}"
+    group: "{{ vm_user_details.group }}"
+    mode: '0644'
+  tags: eHacking_vm
+
+
+- name: Create Docker Compose Starter from Template
+  ansible.builtin.template:
+    src: "{{ config_dir }}/templates/.hidden/start.sh.j2"
+    remote_src: yes
+    dest: "{{ vm_user_details.home }}/.hidden/start.sh"
+    owner: "{{ vm_user }}"
+    group: "{{ vm_user_details.group }}"
+    mode: '0755'
+  tags: eHacking_vm
+
+
+# - name: Pull Docker image
+#   community.docker.docker_image:
+#     name: rubnds/e-hacking
+#     tag: "{{ ehacking_docker }}"mkdir
+#     source: pull
+#   tags: eHacking_vm
+
+- name: Pull Docker image (without ansible-community-docker extension)
+  ansible.builtin.command: |
+    docker-compose -f "{{ vm_user_details.home }}/.hidden/docker-compose.yml" pull --quiet
+  tags: eHacking_vm
+
+- name: Copy Root CA into System Trust Store
+  ansible.builtin.copy:
+    src: "{{ config_dir }}/ehacking-ca.cert.pem"
+    remote_src: yes
+    dest: /usr/local/share/ca-certificates/ehacking-ca.crt
+    owner: root
+    group: root
+    mode: '0644'
+  notify:
+    - update CA certificates
+    - chromium update certificates
+    - firefox update certificates
+  tags: eHacking_vm

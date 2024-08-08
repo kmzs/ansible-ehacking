@@ -1,0 +1,52 @@
+---
+- name: VSCode - Add signing key to keyring file
+  ansible.builtin.apt_key:
+    id: BC528686B50D79E339D3721CEB3E94ADBE1229CF
+    url: https://packages.microsoft.com/keys/microsoft.asc
+    keyring: /etc/apt/trusted.gpg.d/packages.microsoft.gpg
+  tags: vscode
+
+- name: VSCode - Add apt repository
+  apt_repository:
+    repo: deb https://packages.microsoft.com/repos/code stable main
+    state: present
+  tags: vscode
+
+
+- name: VSCode - Update apt cache
+  apt:
+    update_cache: yes
+    cache_valid_time: 86400  # One day in seconds
+  tags: vscode
+
+- name: VSCode - Install 
+  apt:
+    pkg:
+      - apt-transport-https # required for code
+      - code
+    state: latest
+  tags: vscode
+
+- name: VScode - Install Plugins
+  become: yes
+  become_user: "{{ vm_user }}"
+  ansible.builtin.command:
+    cmd: 
+      code --install-extension humao.rest-client 
+      code --install-extension rangav.vscode-thunder-client
+    creates: "{{ vm_user_details.home }}/.vscode/extensions/extensions.json"
+  tags: vscode
+
+  # - name: Create VSCode Application Launcher
+  #   ansible.builtin.copy:
+  #     src: '{{ config_dir }}/applications/code.desktop'
+  #     remote_src: yes
+  #     dest: "{{ item }}"
+  #     owner: "{{ vm_user }}"
+  #     group: "{{ vm_user_details.group }}"
+  #     mode: '0755'
+  #   loop:
+  #     - "{{ vm_user_details.home }}/Desktop/"
+  #     - "{{ vm_user_details.home }}/.local/share/applications/"
+  #   notify: trust desktop files
+  #   tags: vscode
