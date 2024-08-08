@@ -14,7 +14,7 @@
     - ubuntu
     - common
     - firefox
-    - chromium-snap
+    - chromium
     - apache
     - burpsuite
     - ehacking-docker

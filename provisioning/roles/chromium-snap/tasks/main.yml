@@ -1,10 +1,17 @@
 ---
-- name: Install Chromium
+- name: Install Chromium Snap
   snap:
     name:
       - chromium
   tags: chromium
   when: ansible_distribution == "Ubuntu"
+
+- name: Install Chromium via apt
+  apt:
+    pkg: "chromium"
+    state: latest
+  tags: chromium
+  when: ansible_distribution == "Kali"
 
 - name: Set chromium_certificate_store
   ansible.builtin.set_fact:
@@ -12,7 +19,7 @@
   when: chromium_certificate_store is undefined
   tags: chromium
 
-- name: Ensure the Chromium Snap NSS database directory exists
+- name: Ensure the Chromium NSS database directory exists
   ansible.builtin.file:
     path: "{{ chromium_certificate_store }}"
     state: directory
@@ -21,7 +28,7 @@
     group: "{{ vm_user_details.group }}"
   tags: chromium
 
-- name: Create the Chromium Snap certificate database if it does not exist
+- name: Create the Chromium certificate database if it does not exist
   ansible.builtin.command: 
     cmd: bash -c "certutil -N -d sql:{{ chromium_certificate_store }} -f /dev/null"
     creates: "{{ chromium_certificate_store }}/cert9.db"
