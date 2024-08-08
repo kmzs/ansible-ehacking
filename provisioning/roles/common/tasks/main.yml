@@ -29,7 +29,7 @@
 - name: Copy configuration files to Desktop
   ansible.builtin.copy:
     src: '{{ config_dir }}/Desktop/'
-    remote_src: yepwd
+    remote_src: yes
     dest: '{{ vm_user_details.home }}/Desktop/'
     owner: "{{ vm_user }}"
     group: "{{ vm_user_details.group }}"
