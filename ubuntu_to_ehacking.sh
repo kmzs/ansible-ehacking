@@ -19,4 +19,4 @@ else
     git pull
 fi
 echo "### Deployment via ansible"
-sudo ansible-playbook -i inventory/hosts.yml provisioning/playbook.yml --skip-tags="postman"
+sudo ansible-playbook -i provisioning/inventory/hosts.yml provisioning/playbook.yml --skip-tags="postman"
