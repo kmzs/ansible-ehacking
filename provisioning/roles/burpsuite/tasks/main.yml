@@ -10,6 +10,13 @@
     state: present
   tags: system-ubuntu
 
+- name: Remove Kali's internal burp
+  apt:
+    pkg: "burpsuite"
+    state: absent
+  tags: burpsuite
+  when: ansible_distribution == "Kali"
+
 - name: Download installer (x86_64)
   ansible.builtin.get_url:
     url: "https://portswigger.net/burp/releases/download?product=community&type=linux"
@@ -40,16 +47,17 @@
 #     state: link
 #   tags: system-ubuntu
 
-- name: Find JAR file
-  find:
-    paths: /
-    patterns: '*burpsuite*.jar'
-    recurse: yes
-  register: burpsuite_jar_search
+# - name: Find JAR file
+#   find:
+#     paths: /
+#     patterns: '*burpsuite*.jar'
+#     recurse: yes
+#   register: burpsuite_jar_search
 
 - name: Set JAR path as a fact
   set_fact:
-    burpsuite_jar: "{{ burpsuite_jar_search.files[0].path }}"
+    # burpsuite_jar: "{{ burpsuite_jar_search.files[0].path }}"
+    burpsuite_jar: "/usr/local/BurpSuiteCommunity/burpsuite_community.jar"
   when: burpsuite_jar_search.matched > 0
 
 - name: Copy configuration to {{ vm_user_details.home }}
