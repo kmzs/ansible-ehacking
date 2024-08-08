@@ -10,7 +10,7 @@
   when: firefox_profile_directory is undefined
   tags: firefox
 
-- name: Install probably missing packages
+- name: Install Firefox
   apt:
     pkg: "{{ firefox_pkg }}"
     state: latest
