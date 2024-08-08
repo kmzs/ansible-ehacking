@@ -22,8 +22,7 @@
   tags: chromium
 
 - name: Create the Chromium Snap certificate database if it does not exist
-  ansible.builtin.command: >
-    bash -c "certutil -N -d sql:{{ chromium_certificate_store }} -f /dev/null"
-  args:
+  ansible.builtin.command: 
+    cmd: bash -c "certutil -N -d sql:{{ chromium_certificate_store }} -f /dev/null"
     creates: "{{ chromium_certificate_store }}/cert9.db"
-    tags: chromium
+  tags: chromium
