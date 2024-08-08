@@ -1,0 +1,13 @@
+import sys, pexpect.popen_spawn, signal, time
+child = pexpect.popen_spawn.PopenSpawn('/usr/local/BurpSuiteCommunity/jre/bin/java -Djava.awt.headless=true -jar {{ burpsuite_jar }}', encoding='cp437')
+# child.logfile = sys.stdout
+child.expect('Do you accept the terms and conditions\\? \\(y/n\\)')
+child.sendline('y')
+
+time.sleep(10)
+
+wget = pexpect.popen_spawn.PopenSpawn('wget -e use_proxy=yes -e http_proxy=127.0.0.1:8080 -O {{ vm_user_details.home }}/Downloads/Burpsuite-CA-certificate.pem http://burpsuite/cert', encoding='cp437')
+
+time.sleep(5)
+
+child.kill(signal.SIGTERM)

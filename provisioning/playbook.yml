@@ -1,0 +1,662 @@
+---
+- hosts: all
+  remote_user: vagrant
+  become_user: root
+  become: yes
+  vars:
+    config_system_locale: 'de_DE.UTF-8'
+    config_system_timezone: 'Europe/Berlin'
+    config_keyboard_layout: 'de'
+    ehacking_docker: "2023-10-kali"
+    # config_dir: "/home/vagrant/config"
+    config_dir: "{{ playbook_dir }}/.."
+    vm_user: "student"
+    # burp_jar: "/usr/local/BurpSuiteCommunity/burpsuite_community.jar"
+
+  handlers:
+  - name: restart apache
+    ansible.builtin.service:
+      name: apache2
+      state: restarted
+
+  tasks:
+
+  # - name: Root password
+  #   ansible.builtin.user:
+  #     name: root
+  #     update_password: always
+  #     # password: "{{ 'toor' | string | password_hash('sha512') }}"
+  #     password: '$6$N4ezv4Mlaa3FoRlh$c.AlZuLtDkeM7e6jKp1yJ4Z44Byi1JxCPmwDWY4/qaek42GfxIGl4NhO4KhUD3EM.6yu5tjKwl4MAHmLrUl.a0'
+  #   tags: user_root
+
+  # - name: Add Kali signing key to keyring file
+  #   ansible.builtin.apt_key:
+  #     id: 44C6513A8E4FB3D30875F758ED444FF07D8D0BF6
+  #     url: https://archive.kali.org/archive-key.asc 
+  #     keyring: /etc/apt/trusted.gpg.d/packages.archive-key.gpg
+  #   tags: system-cloud
+
+  # - name: Add Kali apt repository
+  #   apt_repository:
+  #     repo: deb https://http.kali.org/kali kali-rolling main contrib non-free
+  #     state: present
+  #   tags: system-cloud
+
+  # - name: Ensure kali.pref exists
+  #   ansible.builtin.copy:
+  #     dest: /etc/apt/preferences.d/http_kali_org_kali.pref
+  #     content: |
+  #       Package: *
+  #       Pin: release a=kali-rolling
+  #       Pin-Priority: 50
+  #     mode: '0644'
+
+  - name: Add VSCode signing key to keyring file
+    ansible.builtin.apt_key:
+      id: BC528686B50D79E339D3721CEB3E94ADBE1229CF
+      url: https://packages.microsoft.com/keys/microsoft.asc
+      keyring: /etc/apt/trusted.gpg.d/packages.microsoft.gpg
+    tags: vscode
+
+  - name: Add VSCode apt repository
+    apt_repository:
+      repo: deb https://packages.microsoft.com/repos/code stable main
+      state: present
+    tags: vscode
+
+  # - name: Add Google Chrome signing key to keyring file
+  #   ansible.builtin.apt_key:
+  #     id: EB4C1BFD4F042F6DDDCCEC917721F63BD38B4796
+  #     url: https://dl.google.com/linux/linux_signing_key.pub
+  #     keyring: /etc/apt/trusted.gpg.d/packages.google.gpg
+  #   tags: google_chrome
+
+  # - name: Add Google Chrome apt repository
+  #   apt_repository:
+  #     repo: deb http://dl.google.com/linux/chrome/deb/ stable main
+  #     state: present
+  #   tags: google_chrome
+
+  # - name: Install Google Chrome
+  #   apt:
+  #     pkg:
+  #       - google-chrome-stable
+  #     state: latest
+  #   tags: google_chrome
+
+  - name: Update apt cache
+    apt:
+      update_cache: yes
+      cache_valid_time: 86400  # One day in seconds
+    tags: update
+
+  - name: Update all packages
+    apt:
+      upgrade: safe
+      cache_valid_time: 86400  # One day in seconds
+    tags: update
+
+  - name: Update all packages to the latest version
+    apt:
+      upgrade: dist
+      cache_valid_time: 86400  # One day in seconds
+    tags: upgrade
+
+  - name: Install probably missing packages
+    apt:
+      pkg:
+        # - exa
+        - dbus-x11
+        - fish
+        - fzf
+        - htop
+        # - httpie
+        - libnss3-tools
+        - python3
+        - python3-psutil
+        - ripgrep
+        - thunderbird
+        - tldr
+        - tmux
+        - wget
+        - vim
+        - zsh
+      state: latest
+    tags: packages
+
+  - name: Remove unwanted packages
+    apt:
+      pkg:
+        - gnome-initial-setup
+      state: absent
+    tags: packages
+
+  - name: Burpsuite install package dependencies
+    apt:
+      pkg:
+        - default-jre
+        - libfontconfig1
+        - libfreetype6
+        - python3-defusedxml
+        - python3-pexpect
+      state: present
+    tags: system-ubuntu
+  
+  - name: Burpsuite download installer (x86_64)
+    ansible.builtin.get_url:
+      url: "https://portswigger.net/burp/releases/download?product=community&type=linux"
+      dest: "/tmp/burp.sh"
+      mode: '0640'
+    tags: system-ubuntu
+    when: ansible_architecture == "x86_64"
+
+  - name: Burpsuite download installer (aarch64)
+    ansible.builtin.get_url:
+      url: "https://portswigger.net/burp/releases/download?product=community&type=linuxArm64"
+      dest: "/tmp/burp.sh"
+      mode: '0640'
+    tags: system-ubuntu
+    when: ansible_architecture == "aarch64"
+
+  - name: Burpsuite install
+    ansible.builtin.command:
+      cmd: "/bin/sh /tmp/burp.sh -q -varfile '{{ config_dir }}/burpsuite_response.varfile' -overwrite"
+      chdir: /tmp
+      creates: "/usr/local/BurpSuiteCommunity"
+    tags: system-ubuntu
+
+  - name: Burpsuite create symbolic link
+    ansible.builtin.file:
+      src: /usr/local/bin/BurpSuiteCommunity
+      dest: /usr/bin/burpsuite
+      state: link
+    tags: system-ubuntu
+
+  - name: Find BurpSuite JAR file
+    find:
+      paths: /
+      patterns: '*burpsuite*.jar'
+      recurse: yes
+    register: burpsuite_jar_search
+
+  - name: Set BurpSuite JAR path as a fact
+    set_fact:
+      burpsuite_jar: "{{ burpsuite_jar_search.files[0].path }}"
+    when: burpsuite_jar_search.matched > 0
+
+  - name: Install VSCode
+    apt:
+      pkg:
+        - apt-transport-https # required for code
+        - code
+      state: latest
+    tags: vscode
+
+  - name: Install docker
+    apt:
+      pkg:
+        - docker.io
+        - docker-compose
+      state: latest
+    tags: eHacking_vm
+
+  - name: Ensure the locale {{ config_system_locale }} exists
+    locale_gen:
+      name: "{{ config_system_locale }}"
+      state: present
+    tags: system
+
+  - name: Get current locale and language configuration
+    command: localectl status
+    register: locale_status
+    changed_when: false
+    tags: system
+
+  - name: Set {{ config_system_locale }} as default locale
+    command: localectl set-locale LANG={{ config_system_locale }} LANGUAGE={{ config_system_locale }}
+    tags: system
+
+  - name: Set timezone to {{ config_system_timezone }}
+    timezone:
+      name: "{{ config_system_timezone }}"
+    tags: system
+
+  - name: Change keyboard layout in /etc/default/keyboard to {{ config_keyboard_layout }}
+    lineinfile:
+      path: /etc/default/keyboard
+      regexp: '^XKBLAYOUT="us"'
+      line: XKBLAYOUT="{{ config_keyboard_layout }}"
+    tags: system
+
+  - name: Remove dependencies that are no longer required
+    apt:
+      autoremove: yes
+    tags: clean
+
+  - name: Remove useless packages from the cache
+    apt:
+      autoclean: yes
+    tags: clean
+
+  # - name: Clean apt deb file cache
+  #   apt:
+  #     clean: yes
+  #   tags: clean
+
+  - name: Add mappings to /etc/hosts
+    ansible.builtin.blockinfile:
+      path: /etc/hosts
+      block: |
+        {{ item.ip }} {{ item.name }}
+      marker: "# {mark} ANSIBLE MANAGED BLOCK {{ item.name }}"
+    loop:
+      - { name: attacker.com, ip: 127.0.0.1 }
+      - { name: honest-idp.com, ip: 127.0.0.1 }
+      - { name: honest-rs.com, ip: 127.0.0.1 }
+      - { name: honest-sp.com, ip: 127.0.0.1 }
+      - { name: honest-spa.com, ip: 127.0.0.1 }
+      - { name: malicious.com, ip: 172.17.0.1 }
+    tags: eHacking_vm
+
+  - name: Install apache2
+    apt:
+      pkg:
+        - apache2
+      state: latest
+    tags: apache
+
+  - name: Change Apache2 HTTP port in /etc/apache2/ports.conf
+    ansible.builtin.lineinfile:
+      path: /etc/apache2/ports.conf
+      regexp: '^Listen 80'
+      line: 'Listen 9090'
+    notify: restart apache
+    tags: apache
+
+  - name: Change Apache2 HTTPS port in /etc/apache2/ports.conf
+    ansible.builtin.replace:
+      path: /etc/apache2/ports.conf
+      regexp: 'Listen 443'
+      replace: 'Listen 9443'
+    notify: restart apache
+    tags: apache
+
+  - name: Change Apache2 ports in /etc/apache2/sites-available/default-ssl.conf
+    ansible.builtin.replace:
+      path: /etc/apache2/sites-available/default-ssl.conf
+      regexp: '(<VirtualHost.*:)(443)(>)'
+      replace: '\g<1>9443\g<3>'
+      backup: yes
+    notify: restart apache
+    tags: apache
+
+  - name: Enable Apache2 ssl module
+    ansible.builtin.command:
+      cmd: a2enmod ssl
+    notify: restart apache
+    tags: apache
+
+  - name: Enable Apache2 default-ssl site
+    ansible.builtin.command:
+      cmd: a2ensite default-ssl
+    notify: restart apache
+    tags: apache
+
+  - name: Generate Apache2 SSL certificate
+    ansible.builtin.command:
+      cmd: make-ssl-cert generate-default-snakeoil --force-overwrite
+      # creates: /etc/ssl/private/ssl-cert-snakeoil.key
+    notify: restart apache
+    tags: apache
+
+  - name: Copy Apache2 Certficate to /usr/local/share/ca-certificates/
+    ansible.builtin.copy:
+      src: /etc/ssl/certs/ssl-cert-snakeoil.pem
+      remote_src: yes
+      dest: /usr/local/share/ca-certificates/
+      owner: "root"
+      group: "root"
+      mode: '0644'
+    tags: apache
+
+  - name: Ensure apache2 is enabled and started
+    ansible.builtin.service:
+      name: apache2
+      enabled: yes
+      state: started
+    tags: apache
+
+  - name: Create {{ vm_user }} user
+    ansible.builtin.user:
+      name: "{{ vm_user }}"
+      # password: "{{ 'kali' | string | password_hash('sha512') }}"
+      password: '$6$MCGNSn5FNKeOmOiT$RnFNfpslJK9Zaz2W2tWw/.Q/B1mFcA.7VMjlQMXZPvh7ar6rGSKE17FehHe3O./6cZioAyIgxC37B3j7giaXJ0'
+      comment: "{{ vm_user }} (Default for eHacking)"
+      groups: sudo,docker
+      shell: /usr/bin/bash
+    tags: system
+
+  - name: Get user details
+    ansible.builtin.user:
+      name: "{{ vm_user }}"
+    register: vm_user_details
+
+  - name: Install Firefox
+    snap:
+      name:
+        - firefox
+    tags: 
+      - firefox
+      - system-ubuntu
+
+  - name: Install Chromium
+    snap:
+      name:
+        - chromium
+    tags: 
+      - google_chrome
+      - system-ubuntu
+
+  - name: VScode - Install Plugins
+    become: yes
+    become_user: "{{ vm_user }}"
+    ansible.builtin.command:
+      cmd: 
+        code --install-extension humao.rest-client 
+        code --install-extension rangav.vscode-thunder-client
+      creates: "{{ vm_user_details.home }}/.vscode/extensions/extensions.json"
+    tags: vscode
+
+  - name: Create User Application directory
+    ansible.builtin.file:
+      path: '{{ vm_user_details.home }}/.local/share/applications/'
+      state: 'directory'
+      mode: '0755'
+      owner: "{{ vm_user }}"
+      group: "{{ vm_user_details.group }}"
+    tags: system
+
+  - name: Create Desktop directory
+    ansible.builtin.file:
+      path: '{{ vm_user_details.home }}/Desktop'
+      state: 'directory'
+      mode: '0755'
+      owner: "{{ vm_user }}"
+      group: "{{ vm_user_details.group }}"
+    tags: system
+
+  - name: Create Downloads directory
+    ansible.builtin.file:
+      path: '{{ vm_user_details.home }}/Downloads'
+      state: 'directory'
+      mode: '0755'
+      owner: "{{ vm_user }}"
+      group: "{{ vm_user_details.group }}"
+    tags: system
+
+  - name: Copy configuration files to Desktop
+    ansible.builtin.copy:
+      src: '{{ config_dir }}/Desktop/'
+      remote_src: yes
+      dest: '{{ vm_user_details.home }}/Desktop/'
+      owner: "{{ vm_user }}"
+      group: "{{ vm_user_details.group }}"
+      mode: '0755'
+    tags: system
+
+  # - name: Create Firefox Application Launcher
+  #   ansible.builtin.template:
+  #     src: '{{ config_dir }}/applications/firefox-esr.desktop'
+  #     remote_src: yes
+  #     dest: "{{ item }}"
+  #     owner: "{{ vm_user }}"
+  #     group: "{{ vm_user_details.group }}"
+  #     mode: '0755'
+  #   loop:
+  #     - "{{ vm_user_details.home }}/Desktop/firefox-esr.desktop"
+  #     - /usr/share/applications/firefox-esr.desktop
+  #   tags: firefox
+
+  # - name: Create VSCode Application Launcher
+  #   ansible.builtin.copy:
+  #     src: '{{ config_dir }}/applications/code.desktop'
+  #     remote_src: yes
+  #     dest: "{{ item }}"
+  #     owner: "{{ vm_user }}"
+  #     group: "{{ vm_user_details.group }}"
+  #     mode: '0755'
+  #   loop:
+  #     - "{{ vm_user_details.home }}/Desktop/"
+  #     - "{{ vm_user_details.home }}/.local/share/applications/"
+  #   tags: vscode
+
+  # - name: Create Postman Application Launcher
+  #   ansible.builtin.copy:
+  #     src: '{{ config_dir }}/applications/postman.desktop'
+  #     remote_src: yes
+  #     dest: "{{ item }}"
+  #     owner: "{{ vm_user }}"
+  #     group: "{{ vm_user_details.group }}"
+  #     mode: '0755'
+  #   loop:
+  #     - "{{ vm_user_details.home }}/Desktop/"
+  #     - "{{ vm_user_details.home }}/.local/share/applications/"
+  #   tags: postman
+
+  # - name: Create Burpsuite Application Launcher
+  #   ansible.builtin.copy:
+  #     src: '{{ config_dir }}/applications/kali-burpsuite.desktop'
+  #     remote_src: yes
+  #     dest: "{{ item }}"
+  #     owner: "{{ vm_user }}"
+  #     group: "{{ vm_user_details.group }}"
+  #     mode: '0755'
+  #   loop:
+  #     - "{{ vm_user_details.home }}/Desktop/"
+  #     - "{{ vm_user_details.home }}/.local/share/applications/"
+  #   tags: burpsuite
+
+  - name: Create eHacking Application Launcher from template
+    ansible.builtin.template:
+      src: '{{ config_dir }}/templates/applications/starter.desktop.j2'
+      remote_src: yes
+      dest: "{{ item }}"
+      owner: "{{ vm_user }}"
+      group: "{{ vm_user_details.group }}"
+      mode: '0755'
+    loop:
+      - "{{ vm_user_details.home }}/Desktop/starter.desktop"
+      - "{{ vm_user_details.home }}/.local/share/applications/starter.desktop"
+    tags: eHacking_vm
+
+  # TODO: find out why this errors
+  - name: Trust all Desktop files
+    become: yes
+    become_user: "{{ vm_user }}"
+    ansible.builtin.command:
+      cmd: |
+        dbus-launch gio set "{{ item }}" "metadata::trusted" "true"
+    loop: "{{ query('fileglob', '{{ vm_user_details.home }}/Desktop/*.desktop') }}"
+
+  - name: Copy configuration .hidden to kali home directory
+    ansible.builtin.copy:
+      src: "{{ config_dir }}/.hidden"
+      remote_src: yes
+      dest: "{{ vm_user_details.home }}/"
+      owner: "{{ vm_user }}"
+      group: "{{ vm_user_details.group }}"
+      mode: '0755'
+    tags: eHacking_vm
+
+  - name: Create eHacking Docker Compose File from Template
+    ansible.builtin.template:
+      src: "{{ config_dir }}/templates/.hidden/docker-compose.yml.j2"
+      remote_src: yes
+      dest: "{{ vm_user_details.home }}/.hidden/docker-compose.yml"
+      owner: "{{ vm_user }}"
+      group: "{{ vm_user_details.group }}"
+      mode: '0644'
+
+  - name: Create eHacking Docker Compose Starter from Template
+    ansible.builtin.template:
+      src: "{{ config_dir }}/templates/.hidden/start.sh.j2"
+      remote_src: yes
+      dest: "{{ vm_user_details.home }}/.hidden/start.sh"
+      owner: "{{ vm_user }}"
+      group: "{{ vm_user_details.group }}"
+      mode: '0755'
+
+  - name: Copy configuration .BurpSuite to {{ vm_user_details.home }}
+    ansible.builtin.copy:
+      src: "{{ config_dir }}/.BurpSuite"
+      remote_src: yes
+      dest: '{{ vm_user_details.home }}/'
+      owner: "{{ vm_user }}"
+      group: "{{ vm_user_details.group }}"
+      mode: '0755'
+    tags: burpsuite
+
+  - name: Copy further configuration in .BurpSuite from template
+    ansible.builtin.template:
+      src: "{{ item }}"
+      remote_src: yes
+      dest: "{{ vm_user_details.home }}/.BurpSuite/{{ item | basename | regex_replace('\\.j2$', '') }}"
+      owner: "{{ vm_user }}"
+      group: "{{ vm_user_details.group }}"
+      mode: '0755'
+    loop: "{{ query('fileglob', '{{ config_dir }}/templates/.BurpSuite/*.j2') }}"
+    tags: burpsuite
+
+  - name: Configure Burpsuite
+    become: yes
+    become_user: "{{ vm_user }}"
+    ansible.builtin.command:
+      cmd: |
+        python3 {{ vm_user_details.home }}/.BurpSuite/burp-accept-terms-and-conditions-and-download-ca-cert.py
+        rm -rf /tmp/burp*.tmp
+      creates: "{{ vm_user_details.home }}/Downloads/Burpsuite-CA-certificate.pem"
+    tags: burpsuite
+
+  - name: Create Firefox directories
+    ansible.builtin.file:
+      path: "{{ item }}"
+      state: directory
+      owner: "{{ vm_user }}"
+      group: "{{ vm_user_details.group }}"
+      mode: '0755'
+    loop:
+      - "{{ vm_user_details.home }}/.mozilla/certificates"
+      - "{{ vm_user_details.home }}/.pki/nssdb"
+      - /etc/firefox/policies
+    tags: firefox
+
+  - name: Extract Firefox configuration
+    ansible.builtin.unarchive:
+      src: "{{ config_dir }}/firefox.tar.gz"
+      dest: "{{ vm_user_details.home }}/.mozilla/"
+      remote_src: yes
+      creates: "{{ vm_user_details.home }}/.mozilla/cert9.db"
+    tags: firefox
+
+  - name: Create Firefox policies.json from template
+    ansible.builtin.template:
+      src: "{{ config_dir }}/templates/etc_firefox_policies/policies.json.j2"
+      remote_src: yes
+      dest: "/etc/firefox/policies/policies.json"
+      mode: '0644'
+      owner: "root"
+      group: "root"
+    tags: firefox
+
+  # - name: Copy Burpsuite-CA-certificate.pem into Firefox Directory
+  #   ansible.builtin.copy:
+  #     src: "{{ vm_user_details.home }}/Downloads/Burpsuite-CA-certificate.pem"
+  #     remote_src: yes
+  #     dest: "{{ vm_user_details.home }}/.mozilla/certificates/"
+  #     owner: "{{ vm_user }}"
+  #     group: "{{ vm_user_details.group }}"
+  #     mode: '0644'
+  #   tags: firefox
+
+  - name: Copy Burpsuite-CA-certificate.pem into System Trust Store
+    ansible.builtin.copy:
+      src: "{{ vm_user_details.home }}/Downloads/Burpsuite-CA-certificate.pem"
+      remote_src: yes
+      dest: /usr/local/share/ca-certificates/
+      owner: root
+      group: root
+      mode: '0644'
+    tags: burpsuite
+
+  - name: Download Postman
+    ansible.builtin.get_url:
+      url: https://dl.pstmn.io/download/latest/linux64
+      dest: /tmp/postman-linux-x64.tar.gz
+      mode: '0644'
+    tags: postman
+
+  - name: Extract Postman
+    ansible.builtin.unarchive:
+      src: /tmp/postman-linux-x64.tar.gz
+      dest: /opt
+      remote_src: yes
+      creates: /opt/Postman/app/Postman
+    tags: postman
+
+  - name: Create symbolic link for Postman
+    ansible.builtin.file:
+      src: /opt/Postman/app/Postman
+      dest: /usr/local/bin/Postman
+      state: link
+    tags: postman
+
+  # - name: Pull Docker image
+  #   community.docker.docker_image:
+  #     name: rubnds/e-hacking
+  #     tag: "{{ ehacking_docker }}"
+  #     source: pull
+  #   tags: eHacking_vm
+
+  - name: Pull Docker image (without ansible-community-docker extension)
+    ansible.builtin.command: |
+      docker-compose -f "{{ vm_user_details.home }}/.hidden/docker-compose.yml" pull --quiet
+    tags: eHacking_vm
+
+  # - name: Copy eHacking Root CA into Firefox Directory
+  #   ansible.builtin.copy:
+  #     src: '{{ config_dir }}/ehacking-ca.der.pem'
+  #     remote_src: yes
+  #     dest: "{{ vm_user_details.home }}/.mozilla/certificates/"
+  #     owner: "{{ vm_user }}"
+  #     group: "{{ vm_user_details.group }}"
+  #     mode: '0644'
+  #   tags: eHacking_vm
+
+  - name: Copy eHacking Root CA into System Trust Store
+    ansible.builtin.copy:
+      src: "{{ config_dir }}/ehacking-ca.cert.pem"
+      remote_src: yes
+      dest: /usr/local/share/ca-certificates/ehacking-ca.crt
+      owner: root
+      group: root
+      mode: '0644'
+    tags: eHacking_vm
+
+  - name: Install Certificates in User Database
+    ansible.builtin.command: |
+      certutil -i {{ item }} -d sql:{{ vm_user_details.home }}/.pki/nssdb/ -A -t "C,," -n "{{ item | basename }}"
+      certutil -i {{ item }} -d sql:{{ vm_user_details.home }}/.mozilla/firefox/oanmuaxw.default-esr/ -A -t "C,," -n "{{ item | basename }}"
+    loop: "{{ query('fileglob', '/usr/local/share/ca-certificates/*') }}"
+    tags: eHacking_vm
+
+  - name: Update CA certificates
+    ansible.builtin.command: update-ca-certificates
+    tags: [ "burpsuite" , "eHacking_vm" ]
+
+  - name: Set favorite apps
+    community.general.dconf:
+      key: "/org/gnome/shell/favorite-apps"
+      value: "['org.gnome.Terminal.desktop', 'org.gnome.Nautilus.desktop', 'firefox_firefox.desktop', 'chromium_chromium.desktop', 'install4j_18rmkj0-BurpSuiteCommunity.desktop', 'starter.desktop', 'code.desktop']"
+      state: present
+    become: yes
+    become_user: "{{ vm_user }}"

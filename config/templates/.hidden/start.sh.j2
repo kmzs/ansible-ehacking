@@ -1,0 +1,9 @@
+#!/bin/bash
+
+set -e
+
+cd {{ vm_user_details.home }}/.hidden
+docker-compose down
+docker-compose pull
+docker system prune -f
+docker-compose up

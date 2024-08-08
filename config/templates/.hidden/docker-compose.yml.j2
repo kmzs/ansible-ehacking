@@ -1,0 +1,44 @@
+version: "3.9"
+
+services:
+
+  ehacking:
+    image: rubnds/ehacking:{{ ehacking_docker }}
+    container_name: ehacking
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    extra_hosts:
+      - "honest-sp.com:127.0.0.1"
+      - "honest-idp.com:127.0.0.1"
+      - "honest-rs.com:127.0.0.1"
+      - "honest-spa.com:127.0.0.1"
+      - "malicious.com:172.17.0.1"
+    networks:
+      ehacking:
+        ipv4_address: 172.20.0.2
+
+  couchdb:
+    image: couchdb:3.3.2
+    container_name: couchdb
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5984:5984"
+    volumes:
+      - couchdb:/opt/couchdb/data
+      - ./couchdb.ini:/opt/couchdb/etc/local.d/00-ehacking.ini
+    networks:
+      ehacking:
+        ipv4_address: 172.20.0.3
+
+networks:
+  ehacking:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/24
+          gateway: 172.20.0.1
+
+volumes:
+  couchdb:

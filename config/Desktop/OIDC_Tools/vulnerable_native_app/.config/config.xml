@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<configuration>
+    <clients>
+        <client>
+            <client_id>honestsp_org</client_id>
+            <client_secret>secret-honestsp-org</client_secret>
+            <redirect_uri>http://honestsp.org:8080/oidc_sp/verify?next_url=%2Foidc_sp%2FFsuccess%2Findex.xhtml</redirect_uri>
+            <consent_page>true</consent_page>
+        </client>
+        <client>
+            <client_id>client2</client_id>
+            <client_secret>secret-honestsp-2</client_secret>
+            <redirect_uri>http://honestsp.org:8080/oidc_sp/verify?next_url=%2Foidc_sp%2FFsuccess%2Findex.xhtml</redirect_uri>
+            <consent_page>false</consent_page>
+        </client>
+	<client>
+            <client_id>nativeApp</client_id>
+            <client_secret>secret-nativeApp</client_secret>
+            <redirect_uri>http://localhost:7777</redirect_uri>
+            <consent_page>true</consent_page>
+        </client>
+    </clients>
+    <idps>
+        <idp>
+            <idp_id>localhost1</idp_id>
+            <issuer>http://honestidp.org:8080/oidc_idp</issuer>
+            <authendp>http://honestidp.org:8080/oidc_idp/authorize/index.xhtml</authendp>
+            <tokenendp>http://honestidp.org:8080/oidc_idp/token</tokenendp>
+            <jwksendp>http://honestidp.org:8080/oidc_idp/jwk</jwksendp>
+        </idp>
+        <idp>
+            <idp_id>localhost2</idp_id>
+            <webfinger_url>http://honestidp.org:8080/oidc_idp</webfinger_url>
+        </idp>
+        <idp>
+            <idp_id>localhost3</idp_id>
+            <issuer>http://localhost:8080/oidc_idp</issuer>
+            <authendp>http://localhost:8080/oidc_idp/authorize/index.xhtml</authendp>
+            <tokenendp>http://localhost:8080/oidc_idp/token</tokenendp>
+            <jwksendp>http://localhost:8080/oidc_idp/jwk</jwksendp>
+        </idp>
+        <idp>
+            <idp_id>localhost4</idp_id>
+            <webfinger_url>http://localhost:8080/oidc_idp</webfinger_url>
+        </idp>
+    </idps>
+</configuration>
