@@ -58,7 +58,7 @@
   set_fact:
     # burpsuite_jar: "{{ burpsuite_jar_search.files[0].path }}"
     burpsuite_jar: "/usr/local/BurpSuiteCommunity/burpsuite_community.jar"
-  when: burpsuite_jar_search.matched > 0
+  # when: burpsuite_jar_search.matched > 0
 
 - name: Copy configuration to {{ vm_user_details.home }}
   ansible.builtin.copy:
