@@ -33,12 +33,12 @@
     creates: "/usr/local/BurpSuiteCommunity"
   tags: system-ubuntu
 
-- name: Create symbolic link
-  ansible.builtin.file:
-    src: /usr/local/bin/BurpSuiteCommunity
-    dest: /usr/bin/burpsuite
-    state: link
-  tags: system-ubuntu
+# - name: Create symbolic link
+#   ansible.builtin.file:
+#     src: /usr/local/bin/BurpSuiteCommunity
+#     dest: /usr/bin/burpsuite
+#     state: link
+#   tags: system-ubuntu
 
 - name: Find JAR file
   find:
