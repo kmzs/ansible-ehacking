@@ -14,6 +14,7 @@
       - "{{ docker_compose_pkg }}"
     state: latest
   tags: eHacking_vm
+  when:
     - ansible_os_family == "Debian"
     - ansible_distribution == "Ubuntu"
 
@@ -23,6 +24,7 @@
       - docker.io
     state: latest
   tags: eHacking_vm
+  when:
     - ansible_os_family == "Debian"
     - ansible_distribution == "Kali"
 
