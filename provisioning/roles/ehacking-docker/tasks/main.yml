@@ -1,11 +1,40 @@
 ---
-- name: Install docker
+- name: Install Docker and Docker Compose
   apt:
     pkg:
       - docker.io
       - docker-compose
     state: latest
   tags: eHacking_vm
+  when: 
+    - ansible_os_family == "Debian"
+    - ansible_distribution == "Ubuntu"
+    - ansible_distribution_version == "22.04"
+
+- name: Set docker compose (as old executable)
+  set_fact:
+    docker_compose: "docker-compose"
+  when: 
+    - ansible_os_family == "Debian"
+    - ansible_distribution == "Ubuntu"
+    - ansible_distribution_version == "22.04"
+
+- name: Install Docker and Docker Compose
+  apt:
+    pkg:
+      - docker.io
+      - docker-compose-v2  # Assuming 'docker-compose-plugin' is the correct package for Ubuntu 24.04
+    state: latest
+  tags: eHacking_vm
+  when: 
+    - ansible_os_family == "Debian"
+    - ansible_distribution == "Ubuntu"
+    - ansible_distribution_version == "24.04"
+
+- name: Set docker compose (as docker subcommand)
+  set_fact:
+    docker_compose: "docker compose"  
+  when: docker_compose is undefined
 
 - name:  Adding user '{{ vm_user }}' to group docker
   user:
@@ -77,13 +106,13 @@
 # - name: Pull Docker image
 #   community.docker.docker_image:
 #     name: rubnds/e-hacking
-#     tag: "{{ ehacking_docker }}"mkdir
+#     tag: "{{ ehacking_docker }}"
 #     source: pull
 #   tags: eHacking_vm
 
 - name: Pull Docker image (without ansible-community-docker extension)
   ansible.builtin.command: |
-    docker-compose -f "{{ vm_user_details.home }}/.hidden/docker-compose.yml" pull --quiet
+    {{ docker_compose }} -f "{{ vm_user_details.home }}/.hidden/docker-compose.yml" pull --quiet
   tags: eHacking_vm
 
 - name: Copy Root CA into System Trust Store
