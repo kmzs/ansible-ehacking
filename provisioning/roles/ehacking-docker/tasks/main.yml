@@ -1,40 +1,46 @@
 ---
+- name: Set Docker Compose package and command
+  set_fact:
+    docker_compose_pkg: "{{ 'docker-compose' if ansible_distribution_version == '22.04' else 'docker-compose-v2' }}"
+    docker_compose: "{{ 'docker-compose' if ansible_distribution_version == '22.04' else 'docker compose' }}"
+  when: 
+    - ansible_os_family == "Debian"
+    - ansible_distribution == "Ubuntu"
+
 - name: Install Docker and Docker Compose
   apt:
     pkg:
       - docker.io
-      - docker-compose
+      - "{{ docker_compose_pkg }}"
     state: latest
   tags: eHacking_vm
-  when: 
     - ansible_os_family == "Debian"
     - ansible_distribution == "Ubuntu"
-    - ansible_distribution_version == "22.04"
 
-- name: Set docker compose (as old executable)
+- name: Install Docker and Docker Compose (Kali)
+  apt:
+    pkg:
+      - docker.io
+    state: latest
+  tags: eHacking_vm
+    - ansible_os_family == "Debian"
+    - ansible_distribution == "Kali"
+
+- name: Install Docker Compose (Kali)
+  get_url:
+    url: "https://github.com/docker/compose/releases/download/v2.15.1/docker-compose-$(uname -s)-$(uname -m)"
+    dest: "/usr/local/bin/docker-compose"
+    mode: '0755'
+  when: 
+    - ansible_os_family == "Debian"
+    - ansible_distribution == "Kali"
+
+- name: Set Docker Compose package and command (Kali)
   set_fact:
     docker_compose: "docker-compose"
   when: 
     - ansible_os_family == "Debian"
-    - ansible_distribution == "Ubuntu"
-    - ansible_distribution_version == "22.04"
-
-- name: Install Docker and Docker Compose
-  apt:
-    pkg:
-      - docker.io
-      - docker-compose-v2  # Assuming 'docker-compose-plugin' is the correct package for Ubuntu 24.04
-    state: latest
-  tags: eHacking_vm
-  when: 
-    - ansible_os_family == "Debian"
-    - ansible_distribution == "Ubuntu"
-    - ansible_distribution_version == "24.04"
-
-- name: Set docker compose (as docker subcommand)
-  set_fact:
-    docker_compose: "docker compose"  
-  when: docker_compose is undefined
+    - ansible_distribution == "Kali"
 
 - name:  Adding user '{{ vm_user }}' to group docker
   user:

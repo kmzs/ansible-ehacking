@@ -92,9 +92,9 @@
 - name: Create {{ vm_user }} user
   ansible.builtin.user:
     name: "{{ vm_user }}"
-    # password: "{{ 'kali' | string | password_hash('sha512') }}"
-    password: '$6$MCGNSn5FNKeOmOiT$RnFNfpslJK9Zaz2W2tWw/.Q/B1mFcA.7VMjlQMXZPvh7ar6rGSKE17FehHe3O./6cZioAyIgxC37B3j7giaXJ0'
-    comment: "{{ vm_user }} (Default for eHacking)"
+    # password: '$6$MCGNSn5FNKeOmOiT$RnFNfpslJK9Zaz2W2tWw/.Q/B1mFcA.7VMjlQMXZPvh7ar6rGSKE17FehHe3O./6cZioAyIgxC37B3j7giaXJ0' # kali
+    password: '$6$BDBtYXcbUDTBVrZO$zZSc2H2YL7YEQYPufPbFxlvfTOmjWSKrL9df96.MeYL3GXRP0xpgn0Bw5OEJpazVhGqc0pPYO31DtqwU2EaLl.' # student
+    comment: "{{ vm_user }} (Default for eBHacking)"
     groups: sudo
     shell: /usr/bin/bash
   tags: system
