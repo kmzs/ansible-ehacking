@@ -37,10 +37,16 @@
   notify: trust desktop files
   tags: system
 
-- name: Set favorite apps
+- name: Check if dconf is installed, e.g. GNOME or XFCE
+  command: which dconf
+  register: dconf_check
+  ignore_errors: yes
+
+- name: Set favorite GNOME apps
   community.general.dconf:
     key: "/org/gnome/shell/favorite-apps"
     value: "['org.gnome.Terminal.desktop', 'org.gnome.Nautilus.desktop', 'firefox_firefox.desktop', 'chromium_chromium.desktop', 'install4j_18rmkj0-BurpSuiteCommunity.desktop', 'starter.desktop', 'code.desktop']"
     state: present
   become: yes
   become_user: "{{ vm_user }}"
+  when: dconf_check.rc == 0

@@ -1,8 +1,14 @@
 ---
 
+- name: Check if gio is installed, e.g. GNOME or XFCE
+  command: which gio
+  register: gio_check
+  ignore_errors: yes
+
 - name: trust desktop files
   become: yes
   become_user: "{{ vm_user }}"
   ansible.builtin.command:
     cmd: dbus-launch gio set "{{ item }}" "metadata::trusted" "true"
   loop: "{{ query('fileglob', '{{ vm_user_details.home }}/Desktop/*.desktop') }}"
+  when: gio.rc == 0
