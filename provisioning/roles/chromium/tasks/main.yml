@@ -4,7 +4,7 @@
     name:
       - chromium
   tags: chromium
-  when: ansible_distribution == "Ubuntu"
+  when: snap_check.rc == 0
 
 - name: Install Chromium via apt
   apt:
@@ -15,7 +15,7 @@
 
 - name: Set chromium_certificate_store
   ansible.builtin.set_fact:
-    chromium_certificate_store: "{{ vm_user_details.home }}{{ '/snap/chromium/current' if ansible_distribution == 'Ubuntu' }}/.pki/nssdb"
+    chromium_certificate_store: "{{ vm_user_details.home }}{{ '/snap/chromium/current' if snap_check.rc == 0 }}/.pki/nssdb"
   when: chromium_certificate_store is undefined
   tags: chromium
 
