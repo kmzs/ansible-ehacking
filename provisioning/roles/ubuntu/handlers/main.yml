@@ -1,10 +1,4 @@
 ---
-
-- name: Check if gio is installed, e.g. GNOME or XFCE
-  command: which gio
-  register: gio_check
-  ignore_errors: yes
-
 - name: trust desktop files
   become: yes
   become_user: "{{ vm_user }}"

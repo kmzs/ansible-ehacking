@@ -103,3 +103,8 @@
   ansible.builtin.user:
     name: "{{ vm_user }}"
   register: vm_user_details
+
+- name: Check if gio is installed, e.g. GNOME or XFCE
+  command: which gio
+  register: gio_check
+  ignore_errors: yes
