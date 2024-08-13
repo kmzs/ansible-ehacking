@@ -108,3 +108,8 @@
   command: which gio
   register: gio_check
   ignore_errors: yes
+
+- name: Check if snap is installed, e.g. Ubuntu
+  command: which snap
+  register: snap_check
+  ignore_errors: yes
