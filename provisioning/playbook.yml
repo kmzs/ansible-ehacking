@@ -8,7 +8,7 @@
     config_system_timezone: 'Europe/Berlin'
     config_keyboard_layout: 'de'
     ehacking_docker: "2023-10-kali"
-    config_dir: "{{ playbook_dir }}/../config/"
+    config_dir: "{{ playbook_dir }}/../config"
     vm_user: "student"
   roles:
     - ubuntu
