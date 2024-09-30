@@ -1,0 +1,37 @@
+- name: Install Bruno Snap
+  snap:
+    name:
+      - bruno
+  tags: bruno
+  when: snap_check.rc == 0
+
+- name: bruno - Add signing key to keyring file
+  ansible.builtin.apt_key:
+    id: 9FA6017ECABE0266
+    keyserver: keyserver.ubuntu.com
+    keyring: /etc/apt/trusted.gpg.d/packages.bruno.gpg
+  tags: bruno
+
+- name: bruno - Add apt repository
+  apt_repository:
+    repo: deb http://debian.usebruno.com/ bruno stable
+    state: present
+    filename: bruno
+  tags: bruno
+  when: snap_check.rc != 0
+
+
+- name: bruno - Update apt cache
+  apt:
+    update_cache: yes
+    cache_valid_time: 86400  # One day in seconds
+  tags: bruno
+  when: snap_check.rc != 0
+
+- name: bruno - Install 
+  apt:
+    pkg:
+      - bruno
+    state: latest
+  tags: bruno
+  when: snap_check.rc != 0
