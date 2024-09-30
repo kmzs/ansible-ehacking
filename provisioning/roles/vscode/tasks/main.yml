@@ -33,7 +33,7 @@
   ansible.builtin.command:
     cmd: 
       code --install-extension humao.rest-client 
-      code --install-extension rangav.vscode-thunder-client
+      code --install-extension VASubasRaj.flashpost
     creates: "{{ vm_user_details.home }}/.vscode/extensions/extensions.json"
   tags: vscode
 
