@@ -1,4 +1,9 @@
 ---
+- name: Set burpsuite version (leave empty for latest version)
+  ansible.builtin.set_fact:
+    version: "&version=2024.7"
+  tags: firefox
+
 - name: Install package dependencies
   apt:
     pkg:
@@ -19,7 +24,7 @@
 
 - name: Download installer (x86_64)
   ansible.builtin.get_url:
-    url: "https://portswigger.net/burp/releases/download?product=community&type=linux"
+    url: "https://portswigger.net/burp/releases/download?product=community{{ version }}&type=linux"
     dest: "/tmp/burp.sh"
     mode: '0640'
   tags: system-ubuntu
@@ -27,7 +32,7 @@
 
 - name: Download installer (aarch64)
   ansible.builtin.get_url:
-    url: "https://portswigger.net/burp/releases/download?product=community&type=linuxArm64"
+    url: "https://portswigger.net/burp/releases/download?product=community{{ version }}&type=linuxArm64"
     dest: "/tmp/burp.sh"
     mode: '0640'
   tags: system-ubuntu
