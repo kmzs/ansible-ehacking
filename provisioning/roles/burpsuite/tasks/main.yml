@@ -2,7 +2,7 @@
 - name: Set burpsuite version (leave empty for latest version)
   ansible.builtin.set_fact:
     version: "&version=2024.7"
-  tags: firefox
+  tags: burpsuite
 
 - name: Install package dependencies
   apt:
