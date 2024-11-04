@@ -32,8 +32,10 @@
   become_user: "{{ vm_user }}"
   ansible.builtin.command:
     cmd: 
-      code --install-extension humao.rest-client 
+      # code --install-extension humao.rest-client 
       code --install-extension VASubasRaj.flashpost
+      code --install-extension 42Crunch.vscode-openapi
+      code --install-extension petli-full.jq-vscode
     creates: "{{ vm_user_details.home }}/.vscode/extensions/extensions.json"
   tags: vscode
 
