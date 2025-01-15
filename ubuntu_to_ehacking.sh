@@ -11,7 +11,7 @@ else
 fi
 if [ ! -d "ansible-ehacking" ]; then
     echo "### Cloning Git Repository"
-    git clone --depth 1 https://git.noc.ruhr-uni-bochum.de/CheariX/ansible-ehacking.git
+    git clone --depth 1 https://github.com/eHacking-WebSec/ansible-ehacking.git
     cd ansible-ehacking
 else
     echo "### Git repository already exists, updating..."
