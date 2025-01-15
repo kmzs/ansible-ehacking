@@ -1,3 +1,7 @@
+# ⚠️⚠️⚠️ NOTE ❗❗❗ We have moved this repository to github❗❗❗ ⚠️⚠️⚠️
+
+ℹ️ Please find the latest version von [github.com/eHacking-WebSec/ansible-ehacking](https://github.com/eHacking-WebSec/ansible-ehacking/) ℹ️
+
 # eHacking Installation Script using ansible
 
 This repository is meant to transform a basic Ubuntu system into a hacking platform. Previously, we used to deploy a Virtualbox image, but with the rise of different architectures, such as aarch64 (MacBook Silicon), and the variety of hypervisors, this was becoming a tough task.
@@ -9,13 +13,13 @@ The idea of this project is to transform a clean installation on any hypervisor 
 Using wget:
 
 ```sh
-wget -qO- https://git.noc.rub.de/CheariX/ansible-ehacking/-/raw/main/ubuntu_to_ehacking.sh?ref_type=heads | bash
+wget -qO- https://github.com/eHacking-WebSec/ansible-ehacking/-/raw/main/ubuntu_to_ehacking.sh?ref_type=heads | bash
 ```
 
 Using curl:
 
 ```sh
-curl -s https://git.noc.rub.de/CheariX/ansible-ehacking/-/raw/main/ubuntu_to_ehacking.sh?ref_type=heads | bash
+curl -s https://github.com/eHacking-WebSec/ansible-ehacking/-/raw/main/ubuntu_to_ehacking.sh?ref_type=heads | bash
 ```
 
 # Successfully tested operating systems
