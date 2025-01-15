@@ -1,6 +1,6 @@
-# ⚠️⚠️⚠️ NOTE ❗❗❗ We have moved this repository to github❗❗❗ ⚠️⚠️⚠️
+# NOTE: we haved moved to github
 
-ℹ️ Please find the latest version von [github.com/eHacking-WebSec/ansible-ehacking](https://github.com/eHacking-WebSec/ansible-ehacking/) ℹ️
+This is the currently supported repository.
 
 # eHacking Installation Script using ansible
 
