@@ -13,8 +13,14 @@ autoinstall:
     variant: ""
     toggle: null
   packages:
+    - ansible
+    - git
     - spice-vdagent # QoL
     - spice-webdavd # QoL
     - wget
   late-commands:
-    - curtin in-target -- wget -qO- https://raw.githubusercontent.com/eHacking-WebSec/ansible-ehacking/refs/heads/main/ubuntu_to_ehacking.sh | bash
+    - curtin in-target -- wget -qO-  | bash
+    - curtin in-target -- apt-get update
+    - curtin in-target -- apt-get install -y curl vim
+    - curtin in-target -- curl -o /tmp/ubuntu_to_ehacking.sh https://raw.githubusercontent.com/eHacking-WebSec/ansible-ehacking/refs/heads/main/ubuntu_to_ehacking.sh
+    - curtin in-target -- /bin/sh /tmp/ubuntu_to_ehacking.sh
