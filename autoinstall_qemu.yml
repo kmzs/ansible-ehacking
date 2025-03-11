@@ -3,6 +3,7 @@
 
 autoinstall:
   version: 1
+  locale: de_DE.UTF-8
   identity:
     realname: eHacking Student
     username: student
