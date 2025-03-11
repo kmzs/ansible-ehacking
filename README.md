@@ -13,13 +13,13 @@ The idea of this project is to transform a clean installation on any hypervisor 
 Using wget:
 
 ```sh
-wget -qO- https://github.com/eHacking-WebSec/ansible-ehacking/-/raw/main/ubuntu_to_ehacking.sh?ref_type=heads | bash
+wget -qO- https://raw.githubusercontent.com/eHacking-WebSec/ansible-ehacking/refs/heads/main/ubuntu_to_ehacking.sh | bash
 ```
 
 Using curl:
 
 ```sh
-curl -s https://github.com/eHacking-WebSec/ansible-ehacking/-/raw/main/ubuntu_to_ehacking.sh?ref_type=heads | bash
+curl -s https://raw.githubusercontent.com/eHacking-WebSec/ansible-ehacking/refs/heads/main/ubuntu_to_ehacking.sh | bash
 ```
 
 # Successfully tested operating systems
