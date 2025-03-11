@@ -1,0 +1,17 @@
+autoinstall:
+  version: 1
+  identity:
+    realname: eHacking Student
+    username: student
+    hostname: eHacking-local
+    password: '$6$a/6heY1MUoB884X0$5NePYD86sHTmS9MaqyOX3rdWnRCnugJrVw06nph2pByORkQuwmYj5XX4IpBcP1Jt8M6treyEXoNt1tpMz2PU31' # Password "student" created with `openssl passwd -6`
+  keyboard:
+    layout: de
+    variant: ""
+    toggle: null
+  packages:
+    - spice-vdagent # QoL
+    - spice-webdavd # QoL
+    - wget
+  late-commands:
+    - curtin in-target -- wget -qO- https://raw.githubusercontent.com/eHacking-WebSec/ansible-ehacking/refs/heads/main/ubuntu_to_ehacking.sh | bash
