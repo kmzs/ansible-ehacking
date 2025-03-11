@@ -79,37 +79,20 @@
   notify: trust desktop files
   tags: eHacking_vm
 
-- name: Copy configuration {{ vm_user_details.home }}/.hidden
-  ansible.builtin.copy:
-    src: "{{ config_dir }}/.hidden"
-    remote_src: yes
-    dest: "{{ vm_user_details.home }}/"
-    owner: "{{ vm_user }}"
-    group: "{{ vm_user_details.group }}"
-    mode: '0755'
+- name: Cloning e-hacking-local-docker-setup configuration {{ vm_user_details.home }}/.hidden
+  ansible.builtin.git:
+    repo: https://github.com/eHacking-WebSec/e-hacking-local-docker-setup.git
+    dest: "{{ vm_user_details.home }}/.hidden"
+    single_branch: yes
+    version: main
   tags: eHacking_vm
 
-- name: Create Docker Compose File from Template
-  ansible.builtin.template:
-    src: "{{ config_dir }}/templates/.hidden/docker-compose.yml.j2"
-    remote_src: yes
-    dest: "{{ vm_user_details.home }}/.hidden/docker-compose.yml"
-    owner: "{{ vm_user }}"
-    group: "{{ vm_user_details.group }}"
-    mode: '0644'
+- name: Setup eHacking variant in .env
+  ansible.builtin.replace:
+    path: "{{ vm_user_details.home }}/.hidden/.env"
+    regexp: '^VARIANT="main"$'
+    replace: 'VARIANT="{{ ehacking_docker }}"'
   tags: eHacking_vm
-
-
-- name: Create Docker Compose Starter from Template
-  ansible.builtin.template:
-    src: "{{ config_dir }}/templates/.hidden/start.sh.j2"
-    remote_src: yes
-    dest: "{{ vm_user_details.home }}/.hidden/start.sh"
-    owner: "{{ vm_user }}"
-    group: "{{ vm_user_details.group }}"
-    mode: '0755'
-  tags: eHacking_vm
-
 
 # - name: Pull Docker image
 #   community.docker.docker_image:
@@ -119,8 +102,9 @@
 #   tags: eHacking_vm
 
 - name: Pull Docker image (without ansible-community-docker extension)
-  ansible.builtin.command: |
-    {{ docker_compose }} -f "{{ vm_user_details.home }}/.hidden/docker-compose.yml" pull --quiet
+  ansible.builtin.command:
+    cmd: "{{ docker_compose }} pull --quiet"
+    chdir: "{{ vm_user_details.home }}/.hidden"
   tags: eHacking_vm
 
 - name: Copy Root CA into System Trust Store
