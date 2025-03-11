@@ -24,4 +24,4 @@ autoinstall:
     - curtin in-target -- apt-get update
     - curtin in-target -- apt-get install -y curl vim
     - curtin in-target -- curl -o /tmp/ubuntu_to_ehacking.sh https://raw.githubusercontent.com/eHacking-WebSec/ansible-ehacking/refs/heads/main/ubuntu_to_ehacking.sh
-    - curtin in-target -- /bin/sh /tmp/ubuntu_to_ehacking.sh
+    - curtin in-target -- LANG=de_DE.UTF-8 LC_ALL=de_DE.UTF-8 /bin/sh /tmp/ubuntu_to_ehacking.sh
