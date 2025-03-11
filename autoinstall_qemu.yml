@@ -1,3 +1,6 @@
+# You can use the following URL during Ubuntu install:
+# https://bit.ly/eHacking-qemu
+
 autoinstall:
   version: 1
   identity:
