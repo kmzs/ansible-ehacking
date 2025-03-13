@@ -59,10 +59,11 @@
   loop:
     - { name: attacker.com, ip: 127.0.0.1 }
     - { name: honest-idp.com, ip: 127.0.0.1 }
+    - { name: honest-rest.com, ip: 127.0.0.1 }
     - { name: honest-rs.com, ip: 127.0.0.1 }
     - { name: honest-sp.com, ip: 127.0.0.1 }
     - { name: honest-spa.com, ip: 127.0.0.1 }
-    - { name: malicious.com, ip: 172.17.0.1 }
+    - { name: malicious.com, ip: 127.0.0.1 }
   tags: eHacking_vm
 
 - name: Create Application Launcher from template
