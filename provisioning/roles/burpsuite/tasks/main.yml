@@ -1,7 +1,8 @@
 ---
 - name: Set burpsuite version (leave empty for latest version)
   ansible.builtin.set_fact:
-    version: "&version=2024.7.4"
+    # version: "&version=2025.1.4"
+    version: "" # latest
   tags: burpsuite
 
 - name: Install package dependencies
