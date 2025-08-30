@@ -6,6 +6,7 @@ autoinstall:
   locale: de_DE.UTF-8
   keyboard:
     layout: de
+  timezone: "Europe/Berlin"
   identity:
     realname: eHacking Student
     username: student
@@ -14,12 +15,17 @@ autoinstall:
   packages:
     - ansible
     - curl
+    - flatpak
     - git
+    - gnome-software-plugin-flatpak
     - spice-vdagent # QoL
     - spice-webdavd # QoL
     - vim
     - wget
   late-commands:
-    - curtin in-target -- curl -o /tmp/ubuntu_to_ehacking.sh https://raw.githubusercontent.com/eHacking-WebSec/ansible-ehacking/refs/heads/main/ubuntu_to_ehacking.sh
-    - "curtin in-target -- sed -i '2 a\\LC_ALL=de_DE.UTF-8' /tmp/ubuntu_to_ehacking.sh"
-    - curtin in-target -- /bin/sh /tmp/ubuntu_to_ehacking.sh
+    - curtin in-target -- curl -o /home/student/ubuntu_to_ehacking.sh https://raw.githubusercontent.com/eHacking-WebSec/ansible-ehacking/refs/heads/main/ubuntu_to_ehacking.sh
+  # these are not working because, e.g., because there is not systemd running, noch docker socket, etc.
+  # late-commands:
+  #   - curtin in-target -- curl -o /tmp/ubuntu_to_ehacking.sh https://raw.githubusercontent.com/eHacking-WebSec/ansible-ehacking/refs/heads/main/ubuntu_to_ehacking.sh
+  #   - "curtin in-target -- sed -i '2 a\\LC_ALL=de_DE.UTF-8' /tmp/ubuntu_to_ehacking.sh"
+  #   - curtin in-target -- /bin/sh /tmp/ubuntu_to_ehacking.sh
