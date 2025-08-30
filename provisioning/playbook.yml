@@ -15,7 +15,7 @@
     - common
     - firefox
     - chromium
-    - apache
+    # - apache
     - burpsuite
     - ehacking-docker
     - vscode
@@ -25,7 +25,7 @@
       include_role:
           name: bruno
       when: ansible_architecture == 'x86_64'
-    - name: Install postman REST client (only available on x86)
-      include_role:
-          name: postman
-      when: ansible_architecture == 'x86_64'
+    # - name: Install postman REST client (only available on x86)
+    #   include_role:
+    #       name: postman
+    #   when: ansible_architecture == 'x86_64'
