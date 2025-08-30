@@ -13,9 +13,6 @@ autoinstall:
     layout: de
     variant: ""
     toggle: null
-  storage:
-    layout:
-      name: lvm
   packages:
     - ansible
     - curl
