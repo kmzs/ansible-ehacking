@@ -5,14 +5,17 @@ autoinstall:
   version: 1
   locale: de_DE.UTF-8
   identity:
-    realname: eHacking Student
+    realname: "eHacking Student"
     username: student
     hostname: eHacking-local
-    password: '$6$a/6heY1MUoB884X0$5NePYD86sHTmS9MaqyOX3rdWnRCnugJrVw06nph2pByORkQuwmYj5XX4IpBcP1Jt8M6treyEXoNt1tpMz2PU31' # Password "student" created with `openssl passwd -6`
+    password: "$6$a/6heY1MUoB884X0$5NePYD86sHTmS9MaqyOX3rdWnRCnugJrVw06nph2pByORkQuwmYj5XX4IpBcP1Jt8M6treyEXoNt1tpMz2PU31" # Password "student" created with `openssl passwd -6`
   keyboard:
     layout: de
     variant: ""
     toggle: null
+  storage:
+    layout:
+      name: lvm
   packages:
     - ansible
     - curl
@@ -25,7 +28,7 @@ autoinstall:
     - curtin in-target -- apt-get update
     - curtin in-target -- apt-get install -y curl vim
     - curtin in-target -- curl -o /tmp/ubuntu_to_ehacking.sh https://raw.githubusercontent.com/eHacking-WebSec/ansible-ehacking/refs/heads/main/ubuntu_to_ehacking.sh
-    - curtin in-target -- echo "LC_ALL: $LC_ALL"
-    - curtin in-target -- echo "LANG: $LANG"
-    - "curtin in-target -- sed -i '2 a\\LC_ALL=de_DE.UTF-8' /tmp/ubuntu_to_ehacking.sh"
+    - curtin in-target -- echo "LC_ALL colon $LC_ALL"
+    - curtin in-target -- echo "LANG colon $LANG"
+    - curtin in-target -- sed -i "2 a LC_ALL=de_DE.UTF-8" /tmp/ubuntu_to_ehacking.sh
     - curtin in-target -- /bin/sh /tmp/ubuntu_to_ehacking.sh
