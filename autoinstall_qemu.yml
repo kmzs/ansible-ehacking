@@ -22,8 +22,7 @@ autoinstall:
     - spice-webdavd # QoL
     - vim
     - wget
-  late-commands:
-    - curtin in-target -- curl -o /home/student/ubuntu_to_ehacking.sh https://raw.githubusercontent.com/eHacking-WebSec/ansible-ehacking/refs/heads/main/ubuntu_to_ehacking.sh
+  # late-commands:
   # these are not working because, e.g., because there is not systemd running, noch docker socket, etc.
   # late-commands:
   #   - curtin in-target -- curl -o /tmp/ubuntu_to_ehacking.sh https://raw.githubusercontent.com/eHacking-WebSec/ansible-ehacking/refs/heads/main/ubuntu_to_ehacking.sh
