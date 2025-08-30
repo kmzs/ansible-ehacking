@@ -27,5 +27,5 @@ autoinstall:
     - curtin in-target -- curl -o /tmp/ubuntu_to_ehacking.sh https://raw.githubusercontent.com/eHacking-WebSec/ansible-ehacking/refs/heads/main/ubuntu_to_ehacking.sh
     - curtin in-target -- echo "LC_ALL: $LC_ALL"
     - curtin in-target -- echo "LANG: $LANG"
-    - curtin in-target -- sed -i '2 a\LC_ALL=de_DE.UTF-8' /tmp/ubuntu_to_ehacking.sh
+    - "curtin in-target -- sed -i '2 a\\LC_ALL=de_DE.UTF-8' /tmp/ubuntu_to_ehacking.sh"
     - curtin in-target -- /bin/sh /tmp/ubuntu_to_ehacking.sh
