@@ -92,6 +92,7 @@
     dest: "{{ vm_user_details.home }}/.hidden"
     single_branch: yes
     version: main
+  become_user: "{{ vm_user }}"
   tags: eHacking_vm
 
 - name: Setup eHacking variant in .env
@@ -99,6 +100,7 @@
     path: "{{ vm_user_details.home }}/.hidden/.env"
     regexp: '^VARIANT="main"$'
     replace: 'VARIANT="{{ ehacking_docker }}"'
+  become_user: "{{ vm_user }}"
   tags: eHacking_vm
 
 # - name: Pull Docker image
@@ -112,18 +114,19 @@
   ansible.builtin.command:
     cmd: "{{ docker_compose }} pull --quiet"
     chdir: "{{ vm_user_details.home }}/.hidden"
+  become_user: "{{ vm_user }}"
   tags: eHacking_vm
 
-- name: Copy Root CA into System Trust Store
-  ansible.builtin.copy:
-    src: "{{ config_dir }}/ehacking-ca.cert.pem"
-    remote_src: yes
-    dest: /usr/local/share/ca-certificates/ehacking-ca.crt
-    owner: root
-    group: root
-    mode: '0644'
-  notify:
-    - update CA certificates
-    - chromium update certificates
-    - firefox update certificates
-  tags: eHacking_vm
+# - name: Copy Root CA into System Trust Store
+#   ansible.builtin.copy:
+#     src: "{{ config_dir }}/ehacking-ca.cert.pem"
+#     remote_src: yes
+#     dest: /usr/local/share/ca-certificates/ehacking-ca.crt
+#     owner: root
+#     group: root
+#     mode: '0644'
+#   notify:
+#     - update CA certificates
+#     - chromium update certificates
+#     - firefox update certificates
+#   tags: eHacking_vm
