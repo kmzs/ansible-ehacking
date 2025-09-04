@@ -57,13 +57,19 @@
       {{ item.ip }} {{ item.name }}
     marker: "# {mark} ANSIBLE MANAGED BLOCK {{ item.name }}"
   loop:
-    - { name: attacker.com, ip: 127.0.0.1 }
-    - { name: honest-idp.com, ip: 127.0.0.1 }
-    - { name: honest-rest.com, ip: 127.0.0.1 }
-    - { name: honest-rs.com, ip: 127.0.0.1 }
-    - { name: honest-sp.com, ip: 127.0.0.1 }
-    - { name: honest-spa.com, ip: 127.0.0.1 }
-    - { name: malicious.com, ip: 127.0.0.1 }
+  - { name: attacker.localhost, ip: 127.0.0.1 }
+  - { name: e-hacking.localhost, ip: 127.0.0.1 }
+  - { name: idp.localhost, ip: 127.0.0.1 }
+  - { name: json.localhost, ip: 127.0.0.1 }
+  - { name: rest.localhost, ip: 127.0.0.1 }
+  - { name: rs.localhost, ip: 127.0.0.1 }
+  - { name: soap.localhost, ip: 127.0.0.1 }
+  - { name: sp.localhost, ip: 127.0.0.1 }
+  - { name: spa.localhost, ip: 127.0.0.1 }
+  - { name: step-ca.localhost, ip: 127.0.0.1 }
+  - { name: websec.localhost, ip: 127.0.0.1 }
+  - { name: www.e-hacking.localhost, ip: 127.0.0.1 }
+  - { name: xml.localhost, ip: 127.0.0.1 }
   tags: eHacking_vm
 
 - name: Create Application Launcher from template
