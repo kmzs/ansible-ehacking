@@ -100,7 +100,7 @@
     comment: "{{ vm_user }} (Default for eHacking)"
     groups: sudo
     shell: /usr/bin/bash
-  tags: system
+  tags: system-local
 
 - name: Get user details
   ansible.builtin.user:

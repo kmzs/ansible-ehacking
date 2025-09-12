@@ -21,7 +21,7 @@
     - vscode
 
   tasks:
-    - name: Install brono REST client (only available on x86)
+    - name: Install bruno REST client (only available on x86)
       include_role:
           name: bruno
       when: ansible_architecture == 'x86_64'
