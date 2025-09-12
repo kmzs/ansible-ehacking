@@ -1,0 +1,26 @@
+---
+- hosts: all
+  remote_user: user
+  become_user: root
+  become: yes
+  vars:
+    config_system_locale: 'de_DE.UTF-8'
+    config_system_timezone: 'Europe/Berlin'
+    config_keyboard_layout: 'de'
+    ehacking_docker: "main"
+    config_dir: "/home/user/config"
+    local_config_dir: "{{ playbook_dir }}/../config"
+    vm_user: "user"
+  roles:
+    - ubuntu
+    - system-cloud-config-dir
+    - common
+    - firefox
+    - chromium
+    - apache
+    - burpsuite
+    - ehacking-docker
+    - vscode
+    - bruno
+    - system-cloud
+    - sso_advanced

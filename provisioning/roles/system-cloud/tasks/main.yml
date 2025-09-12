@@ -1,0 +1,217 @@
+---
+- name: Install probably missing packages for cloud VM
+  apt:
+    pkg:
+      - xrdp
+      - xfce4
+      - xfce4-terminal
+      - openjdk-17-jdk
+    state: latest
+  tags:
+    - packages
+    - system-cloud
+
+- name: Remove screensaver because it is not needed
+  apt:
+    pkg:
+      - xfce4-screensaver
+    state: absent
+  tags:
+    - packages
+    - system-cloud
+
+- name: Set XRDP as default x-session-manager
+  ansible.builtin.shell: |
+    sudo update-alternatives --set x-session-manager /usr/bin/xfce4-session
+  tags: system-cloud
+
+- name: Ensure group tsusers is present
+  ansible.builtin.group:
+    name: tsusers
+    state: present
+  tags: system-cloud
+
+- name: Ensure group tsadmins is present
+  ansible.builtin.group:
+    name: tsadmins
+    state: present
+  tags: system-cloud
+
+- name: Create {{ vm_user }} user
+  ansible.builtin.user:
+    name: "{{ vm_user }}"
+    password: "{{ vm_user_pw_hash }}" # defined in packer variables
+    comment: "{{ vm_user }} (Default for eHacking)"
+    groups: docker,tsusers
+    shell: /usr/bin/zsh
+  tags: system-cloud
+
+- name: Create {{ vm_user_details.home }}/.zshrc
+  ansible.builtin.file:
+    path: "{{ vm_user_details.home }}/.zshrc"
+    state: touch
+    owner: "{{ vm_user }}"
+    group: "{{ vm_user_details.group }}"
+    mode: '0644'
+  tags: system-cloud
+
+# Fixed popup to authenticate ubuntu user after RDP login
+# "Recommended way (so far)" -> https://c-nergy.be/blog/?p=12073
+- name: Move 02-allow-colord.conf to fix password prompt on RDP login
+  ansible.builtin.command:
+    cmd: mv {{ config_dir }}/02-allow-colord.conf /etc/polkit-1/localauthority.conf.d/
+    creates: /etc/polkit-1/localauthority.conf.d/02-allow-colord.conf
+  tags: system-cloud
+
+- name: start xrdp
+  ansible.builtin.shell: |
+    sudo /etc/init.d/xrdp restart
+  tags: system-cloud
+
+- name: Remove dependencies that are no longer required
+  apt:
+    autoremove: true
+  tags: clean
+
+- name: Remove useless packages from the cache
+  apt:
+    autoclean: true
+  tags: clean
+
+- name: Change owner and group to user for ".hidden" folder
+  become: true
+  ansible.builtin.file:
+    path: "{{ vm_user_details.home }}/.hidden"
+    owner: "{{ vm_user }}"
+    group: "{{ vm_user_details.group }}"
+    recurse: true
+  tags: system-cloud
+
+- name: Remove gnome-terminal from starter desktop icon
+  ansible.builtin.replace:
+    path: "{{ vm_user_details.home }}/Desktop/starter.desktop"
+    regexp: '^Exec=gnome-terminal --class=eHacking -- bash'
+    replace: 'Exec=bash'
+  tags: system-cloud
+
+- name: Create Bruno Application symlink
+  ansible.builtin.file:
+    src: '/var/lib/snapd/desktop/applications/bruno_bruno.desktop'
+    dest: "{{ vm_user_details.home }}/Desktop/bruno_bruno.desktop"
+    owner: "{{ vm_user }}"
+    group: "{{ vm_user_details.group }}"
+    state: link
+  notify: trust desktop files
+  ignore_errors: true
+  tags:
+    - bruno
+    - desktop-icons
+
+- name: Create Burpsuite Application Launchers
+  ansible.builtin.copy:
+    become: true
+    src: '/usr/local/BurpSuiteCommunity/.install4j/install4j_18rmkj0-BurpSuiteCommunity.desktop'
+    remote_src: true
+    dest: "/usr/share/applications/install4j_18rmkj0-BurpSuiteCommunity.desktop"
+    owner: "{{ vm_user }}"
+    group: "{{ vm_user_details.group }}"
+    mode: '0755'
+  tags:
+    - burpsuite
+    - desktop-icons
+
+- name: Create Burpsuite Application symlink
+  ansible.builtin.file:
+    src: '/usr/share/applications/install4j_18rmkj0-BurpSuiteCommunity.desktop'
+    dest: "{{ item }}"
+    owner: "{{ vm_user }}"
+    group: "{{ vm_user_details.group }}"
+    state: link
+  loop:
+    - "{{ vm_user_details.home }}/Desktop/BurpSuiteCommunity.desktop"
+    - "{{ vm_user_details.home }}/.local/share/applications/BurpSuiteCommunity.desktop"
+  notify: trust desktop files
+  ignore_errors: true
+  tags:
+    - burpsuite
+    - desktop-icons
+
+- name: Create Firefox Application symlink
+  ansible.builtin.file:
+    src: '/var/lib/snapd/desktop/applications/firefox_firefox.desktop'
+    dest: "{{ vm_user_details.home }}/Desktop/firefox_firefox.desktop"
+    owner: "{{ vm_user }}"
+    group: "{{ vm_user_details.group }}"
+    state: link
+  notify: trust desktop files
+  ignore_errors: true
+  tags:
+    - firefox
+    - desktop-icons
+
+- name: Create VSCode Application symlink
+  ansible.builtin.file:
+    src: '/usr/share/applications/code.desktop'
+    dest: "{{ vm_user_details.home }}/Desktop/code.desktop"
+    owner: "{{ vm_user }}"
+    group: "{{ vm_user_details.group }}"
+    state: link
+  notify: trust desktop files
+  ignore_errors: true
+  tags:
+    - vscode
+    - desktop-icons
+
+- name: Move background picture to system folder
+  become: true
+  ansible.builtin.command:
+    cmd: mv {{ config_dir }}/hackmanit-bg.jpg /usr/share/backgrounds/hackmanit-bg.jpg
+    creates: /usr/share/backgrounds/hackmanit-bg.jpg
+  tags: system-cloud
+
+- name: Delete default background picture
+  file:
+    path: /usr/share/backgrounds/xfce/xfce-shapes.svg
+    state: absent
+  tags: system-cloud
+
+- name: Overwrite default background picture
+  become: true
+  ansible.builtin.command:
+    cmd: ln -s /usr/share/backgrounds/hackmanit-bg.jpg /usr/share/backgrounds/xfce/xfce-shapes.svg
+  tags: system-cloud
+
+- name: Find desktop files
+  find:
+    paths: "{{ vm_user_details.home }}/Desktop/"
+    patterns: '*.desktop'
+  register: desktop_files
+  tags: system-cloud
+
+- name: Apply command to desktop files
+  ansible.builtin.shell: |
+    chmod +x "{{ item.path }}"; gio set -t string "{{ item.path }}" metadata::xfce-exe-checksum "$(sha256sum "{{ item.path }}" | awk '{print $1}')"
+  loop: "{{ desktop_files.files }}"
+  ignore_errors: true
+  tags: system-cloud
+
+- name: Restart Apache now to make sure port 80 is not used
+  ansible.builtin.service:
+    name: apache2
+    state: restarted
+  ignore_errors: true
+  tags: apache
+
+- name: Automatically start docker containers (without ansible-community-docker extension)
+  ansible.builtin.command:
+    cmd: "{{ docker_compose }} up -d"
+    chdir: "{{ vm_user_details.home }}/.hidden"
+  become_user: "{{ vm_user }}"
+  ignore_errors: true
+  tags:
+  - eHacking_vm
+  - system-cloud
+
+# TODO:
+# - [ ] Starting the docker containers seems not to work properly
+# - [ ] Importing Burp Certificate in Firefox seems not to work properly
