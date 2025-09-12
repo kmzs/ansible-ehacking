@@ -3,6 +3,7 @@
   set_fact:
     docker_compose_pkg: "{{ 'docker-compose' if ansible_distribution_version == '22.04' else 'docker-compose-v2' }}"
     docker_compose: "{{ 'docker-compose' if ansible_distribution_version == '22.04' else 'docker compose' }}"
+  tags: eHacking_vm
   when:
     - ansible_os_family == "Debian"
     - ansible_distribution == "Ubuntu"
@@ -33,6 +34,7 @@
     url: "https://github.com/docker/compose/releases/download/v2.15.1/docker-compose-linux-{{ ansible_architecture }}"
     dest: "/usr/local/bin/docker-compose"
     mode: "0755"
+  tags: eHacking_vm
   when:
     - ansible_os_family == "Debian"
     - ansible_distribution == "Kali"
@@ -40,6 +42,7 @@
 - name: Set Docker Compose package and command (Kali)
   set_fact:
     docker_compose: "docker-compose"
+  tags: eHacking_vm
   when:
     - ansible_os_family == "Debian"
     - ansible_distribution == "Kali"
@@ -49,6 +52,7 @@
     name: "{{ vm_user }}"
     groups: docker
     append: yes
+  tags: eHacking_vm
 
 - name: Add mappings to /etc/hosts
   ansible.builtin.blockinfile:
