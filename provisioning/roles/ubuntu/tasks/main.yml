@@ -42,6 +42,9 @@
   apt:
     pkg:
       - gnome-initial-setup
+      - ibus # ibus cause input issues with burpsuite on GNOME
+      - ibus-gtk
+      - ibus-gtk3
     state: absent
   tags: packages
 
