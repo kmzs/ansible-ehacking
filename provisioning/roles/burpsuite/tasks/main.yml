@@ -85,7 +85,23 @@
     group: "{{ vm_user_details.group }}"
     mode: '0755'
   loop: "{{ query('fileglob', '{{ config_dir }}/templates/.BurpSuite/*.j2') }}"
-  tags: burpsuite
+  tags:
+    - burpsuite
+    - system-local
+
+# Needed because for cloud vm ansible is not executed on the local machine
+- name: Copy further configuration in .BurpSuite from template
+  ansible.builtin.template:
+    src: "{{ item }}"
+    remote_src: false
+    dest: "{{ vm_user_details.home }}/.BurpSuite/{{ item | basename | regex_replace('\\.j2$', '') }}"
+    owner: "{{ vm_user }}"
+    group: "{{ vm_user_details.group }}"
+    mode: '0755'
+  loop: "{{ query('fileglob', '{{ local_config_dir }}/templates/.BurpSuite/*.j2') }}"
+  tags:
+    - burpsuite
+    - system-cloud
 
 - name: Configure and Accept Terms
   become: yes

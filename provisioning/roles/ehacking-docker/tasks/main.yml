@@ -84,7 +84,26 @@
     - "{{ vm_user_details.home }}/Desktop/starter.desktop"
     - "{{ vm_user_details.home }}/.local/share/applications/starter.desktop"
   notify: trust desktop files
-  tags: eHacking_vm
+  tags:
+  - eHacking_vm
+  - system-local
+
+# Needed because for cloud vm ansible is not executed on the local machine
+- name: Create Application Launcher from template
+  ansible.builtin.template:
+    src: '{{ local_config_dir }}/templates/applications/starter.desktop.j2'
+    remote_src: false
+    dest: "{{ item }}"
+    owner: "{{ vm_user }}"
+    group: "{{ vm_user_details.group }}"
+    mode: '0755'
+  loop:
+    - "{{ vm_user_details.home }}/Desktop/starter.desktop"
+    - "{{ vm_user_details.home }}/.local/share/applications/starter.desktop"
+  notify: trust desktop files
+  tags:
+  - eHacking_vm
+  - system-cloud
 
 - name: Cloning e-hacking-local-docker-setup configuration {{ vm_user_details.home }}/.hidden
   ansible.builtin.git:
