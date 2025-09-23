@@ -109,7 +109,6 @@
 
 - name: Create Burpsuite Application Launchers
   ansible.builtin.copy:
-    become: true
     src: '/usr/local/BurpSuiteCommunity/.install4j/install4j_18rmkj0-BurpSuiteCommunity.desktop'
     remote_src: true
     dest: "/usr/share/applications/install4j_18rmkj0-BurpSuiteCommunity.desktop"
