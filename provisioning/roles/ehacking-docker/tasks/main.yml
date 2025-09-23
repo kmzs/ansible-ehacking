@@ -107,13 +107,6 @@
   become_user: "{{ vm_user }}"
   tags: eHacking_vm
 
-# - name: Pull Docker image
-#   community.docker.docker_image:
-#     name: rubnds/e-hacking
-#     tag: "{{ ehacking_docker }}"
-#     source: pull
-#   tags: eHacking_vm
-
 - name: Pull Docker image and Copy ehacking-ca.crt to Download dir
   ansible.builtin.shell: |
     {{ docker_compose }} pull --quiet
