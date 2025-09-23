@@ -117,8 +117,8 @@
 - name: Pull Docker image and Copy ehacking-ca.crt to Download dir
   ansible.builtin.shell: |
     {{ docker_compose }} pull --quiet
-    {{ docker_compose }} up -d step-ca
-    sleep 3
+    {{ docker_compose }} up -d step-ca app
+    sleep 5
     {{ docker_compose }} exec step-ca cat /home/step/certs/root_ca.crt > {{ vm_user_details.home }}/Downloads/ehacking-ca.crt
     {{ docker_compose }} stop step-ca
   args:
