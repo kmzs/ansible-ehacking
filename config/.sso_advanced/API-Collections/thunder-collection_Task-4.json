@@ -1,0 +1,815 @@
+{
+    "client": "Thunder Client",
+    "collectionName": "Task-4",
+    "dateExported": "2025-05-06T13:25:31.322Z",
+    "version": "1.1",
+    "folders": [
+        {
+            "_id": "1dcbb1e8-eeba-40c6-a446-0d70f71380b2",
+            "name": "API Requests",
+            "containerId": "",
+            "created": "2025-05-06T13:22:04.167Z",
+            "sortNum": 10000
+        },
+        {
+            "_id": "0c7688bd-0514-4dfa-9551-5fb47bb6567c",
+            "name": "Code Flow",
+            "containerId": "540ce55c-3ad7-4d7b-9b12-93396d660646",
+            "created": "2025-05-06T13:22:42.461Z",
+            "sortNum": 10000
+        },
+        {
+            "_id": "540ce55c-3ad7-4d7b-9b12-93396d660646",
+            "name": "OAuth / OIDC Flows",
+            "containerId": "",
+            "created": "2025-05-06T13:22:33.853Z",
+            "sortNum": 20000
+        }
+    ],
+    "requests": [
+        {
+            "_id": "ea2cd833-13f6-4bbd-bacb-17c254156cb9",
+            "colId": "1ae91260-df6d-4177-b96c-5febbba02c09",
+            "containerId": "1dcbb1e8-eeba-40c6-a446-0d70f71380b2",
+            "name": "Access openAPI documentation",
+            "url": "{{api1Url}}/v3/api-docs",
+            "method": "GET",
+            "sortNum": 10000,
+            "created": "2025-04-15T07:59:08.739Z",
+            "modified": "2025-04-15T08:53:44.119Z",
+            "headers": [],
+            "params": [],
+            "tests": []
+        },
+        {
+            "_id": "fce50022-c1b9-444d-ac6b-f19b507e3ae3",
+            "colId": "1ae91260-df6d-4177-b96c-5febbba02c09",
+            "containerId": "0c7688bd-0514-4dfa-9551-5fb47bb6567c",
+            "name": "1 Auth. Request",
+            "url": "{{baseUrl}}/auth?client_id={{client_id}}&redirect_uri={{redirect_uri}}&state={{state}}&nonce={{nonce}}&code_challenge={{code_challenge}}&code_challenge_method={{code_challenge_method}}&response_type=code&scope=updateStatus+readStatus+readTime+openid",
+            "method": "GET",
+            "sortNum": 10000,
+            "created": "2025-05-06T13:22:42.464Z",
+            "modified": "2025-05-06T13:22:42.464Z",
+            "headers": [],
+            "params": [
+                {
+                    "name": "client_id",
+                    "value": "{{client_id}}",
+                    "isPath": false
+                },
+                {
+                    "name": "redirect_uri",
+                    "value": "{{redirect_uri}}",
+                    "isPath": false
+                },
+                {
+                    "name": "state",
+                    "value": "{{state}}",
+                    "isPath": false
+                },
+                {
+                    "name": "nonce",
+                    "value": "{{nonce}}",
+                    "isPath": false
+                },
+                {
+                    "name": "code_challenge",
+                    "value": "{{code_challenge}}",
+                    "isPath": false
+                },
+                {
+                    "name": "code_challenge_method",
+                    "value": "{{code_challenge_method}}",
+                    "isPath": false
+                },
+                {
+                    "name": "response_type",
+                    "value": "code",
+                    "isPath": false
+                },
+                {
+                    "name": "scope",
+                    "value": "updateStatus+readStatus+readTime+openid",
+                    "isPath": false
+                }
+            ],
+            "tests": [],
+            "postReq": {
+                "inlineScripts": [
+                    {
+                        "script": [
+                            "// If no valid session cookies exist the response to this request will be the login form for the user. We need to extract the URL to send the user's credentials to in the Login Request.\r",
+                            "if(tc.response.status == 200) {\r",
+                            "  // Load node.js module cheerio\r",
+                            "  const cheerio = await tc.loadModule('cheerio');\r",
+                            "  // Parse HTML response\r",
+                            "  const $ = cheerio.load(tc.response.text);\r",
+                            "  // Extract important pieces from response\r",
+                            "  const loginUrl = $('#kc-form-login').attr('action');\r",
+                            "  if (loginUrl != null) {\r",
+                            "    // Set variables\r",
+                            "    tc.setVar(\"loginUrl\", loginUrl);\r",
+                            "    // console.log(\"loginUrl: \" + loginUrl);\r",
+                            "    tc.test(\"You need to log in. Proceed with the Login Request.\", function(){\r",
+                            "      expect(true) // The condition was already checked by the if clause.\r",
+                            "    })\r",
+                            "  } else {\r",
+                            "    console.log(\"Unknown Error\");\r",
+                            "  }\r",
+                            "} else if(tc.response.status == 302) { // If valid session cookies exist the response to this request will be the auth. response with the tokens. We need to extract the tokens.\r",
+                            "  const authRespUrl = tc.response.getHeader(\"location\");\r",
+                            "  // Check if the request resulted in an error and extract \"error\" and \"error_description\" parameters if this is the case. Otherwise check if \"code\", \"access_token\", or \"id_token\" parameter are present and extract them.\r",
+                            "  const regexError = /error=([^&#]*)/;\r",
+                            "  const regexCode = /code=([^&#]*)/;\r",
+                            "  const regexAccesstoken = /access_token=([^&#]*)/;\r",
+                            "  const regexIdtoken = /id_token=([^&#]*)/;\r",
+                            "  var error = null;\r",
+                            "  var code = null;\r",
+                            "  var access_token = null;\r",
+                            "  var id_token = null;\r",
+                            "  if(regexError.test(authRespUrl)) {\r",
+                            "    error = authRespUrl.match(regexError);\r",
+                            "    const regexErrorDescription = /error_description=([^&#]*)/;\r",
+                            "    const error_description = authRespUrl.match(regexErrorDescription);\r",
+                            "    tc.test(\"error: \" +  error[1] + \" | \" + \"error_description: \" + error_description[1], function(){\r",
+                            "      expect(true) // The condition was already checked by the if clause.\r",
+                            "    })\r",
+                            "  } else {\r",
+                            "    if (regexCode.test(authRespUrl)) {\r",
+                            "      code = authRespUrl.match(regexCode);\r",
+                            "      tc.setVar(\"code\", code[1]);\r",
+                            "      // console.log(\"code: \" + code[1]);\r",
+                            "      tc.test(\"You are already logged in. Code extracted.\", function(){\r",
+                            "        expect(true) // The condition was already checked by the if clause.\r",
+                            "      })\r",
+                            "    }\r",
+                            "    if (regexAccesstoken.test(authRespUrl)) {\r",
+                            "      access_token = authRespUrl.match(regexAccesstoken);\r",
+                            "      tc.setVar(\"access_token\", access_token[1]);\r",
+                            "      // console.log(\"access_token: \" + access_token[1]);\r",
+                            "      tc.test(\"You are already logged in. Access Token extracted.\", function(){\r",
+                            "        expect(true) // The condition was already checked by the if clause.\r",
+                            "      })\r",
+                            "    }\r",
+                            "    if (regexIdtoken.test(authRespUrl)) {\r",
+                            "      id_token = authRespUrl.match(regexIdtoken);\r",
+                            "      tc.setVar(\"id_token\", id_token[1]);\r",
+                            "      // console.log(\"id_token: \" + id_token[1]);\r",
+                            "      tc.test(\"You are already logged in. ID Token extracted.\", function(){\r",
+                            "        expect(true) // The condition was already checked by the if clause.\r",
+                            "      })\r",
+                            "    }\r",
+                            "  }\r",
+                            "  if (error == null && code == null && access_token == null && id_token == null) {\r",
+                            "    console.log(\"Unknown Error\");\r",
+                            "  }\r",
+                            "} else {\r",
+                            "  console.log(\"Unknown Response Status Code\");\r",
+                            "}"
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            "_id": "c60615bb-2aa8-48ec-aa47-02db52cc6026",
+            "colId": "1ae91260-df6d-4177-b96c-5febbba02c09",
+            "containerId": "540ce55c-3ad7-4d7b-9b12-93396d660646",
+            "name": "Refresh Request",
+            "url": "{{baseUrl}}/token",
+            "method": "POST",
+            "sortNum": 10000,
+            "created": "2025-05-06T13:23:15.427Z",
+            "modified": "2025-05-06T13:23:15.427Z",
+            "headers": [],
+            "params": [],
+            "body": {
+                "type": "formencoded",
+                "raw": "",
+                "form": [
+                    {
+                        "name": "grant_type",
+                        "value": "refresh_token"
+                    },
+                    {
+                        "name": "refresh_token",
+                        "value": "{{refresh_token}}"
+                    },
+                    {
+                        "name": "scope",
+                        "value": "openid+readTime+updateStatus+readStatus",
+                        "isDisabled": true
+                    }
+                ]
+            },
+            "auth": {
+                "type": "basic",
+                "basic": {
+                    "username": "{{client_id}}",
+                    "password": "{{client_secret}}"
+                }
+            },
+            "tests": [],
+            "postReq": {
+                "inlineScripts": [
+                    {
+                        "script": [
+                            "// If the request is successful the tokens are extracted from the response.",
+                            "if(tc.response.status == 200) {",
+                            "  const jsonResponse = tc.response.json;",
+                            "  if (jsonResponse.access_token != null) {",
+                            "    tc.setVar(\"access_token\", jsonResponse.access_token);",
+                            "    tc.test(\"Access Token extracted.\", function(){",
+                            "      expect(true) // The condition was already checked by the if clause.",
+                            "    })",
+                            "  }",
+                            "  if (jsonResponse.refresh_token != null) {",
+                            "    tc.setVar(\"refresh_token\", jsonResponse.refresh_token);",
+                            "    tc.test(\"Refresh Token extracted.\", function(){",
+                            "      expect(true) // The condition was already checked by the if clause.",
+                            "    })",
+                            "  }",
+                            "  if (jsonResponse.id_token != null) {",
+                            "    tc.setVar(\"id_token\", jsonResponse.id_token);",
+                            "    tc.test(\"ID Token extracted.\", function(){",
+                            "      expect(true) // The condition was already checked by the if clause.",
+                            "    })",
+                            "  }",
+                            "  if (jsonResponse.access_token == null && jsonResponse.refresh_token == null && jsonResponse.id_token == null) {",
+                            "    console.log(\"Unknown Error\");",
+                            "  }",
+                            "} else if(tc.response.status == 400) { // If the refresh token is not valid an error is returned.",
+                            "  const jsonResponse = tc.response.json;",
+                            "  const error = jsonResponse.error;",
+                            "  const error_description = jsonResponse.error_description;",
+                            "  if (error != null && error_description != null) {",
+                            "    tc.test(\"error: \" +  error + \" | \" + \"error_description: \" + error_description, function(){",
+                            "      expect(true) // The condition was already checked by the if clause.",
+                            "    })",
+                            "  } else {",
+                            "    console.log(\"Unknown Error\");",
+                            "  }",
+                            "} else {",
+                            "  console.log(\"Unknown Response Status Code\");",
+                            "}"
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            "_id": "a7671d9f-8998-48bb-ad69-6f61a749937e",
+            "colId": "1ae91260-df6d-4177-b96c-5febbba02c09",
+            "containerId": "1dcbb1e8-eeba-40c6-a446-0d70f71380b2",
+            "name": "GET /status (API 1)",
+            "url": "{{api1Url}}/status",
+            "method": "GET",
+            "sortNum": 20000,
+            "created": "2025-04-10T08:58:10.186Z",
+            "modified": "2025-05-06T13:21:39.694Z",
+            "headers": [],
+            "params": [
+                {
+                    "name": "debug",
+                    "value": "1",
+                    "isDisabled": true,
+                    "isPath": false
+                }
+            ],
+            "auth": {
+                "type": "bearer",
+                "bearer": "{{access_token}}"
+            },
+            "tests": [],
+            "postReq": {
+                "inlineScripts": [
+                    {
+                        "script": [
+                            "// If the request is successful the tokens are extracted from the response.",
+                            "if(tc.response.status == 200) {",
+                            "  const jsonResponse = tc.response.json;",
+                            "  if (jsonResponse.access_token != null) {",
+                            "    tc.setVar(\"access_token\", jsonResponse.access_token);",
+                            "    tc.test(\"Access Token extracted.\", function(){",
+                            "      expect(true) // The condition was already checked by the if clause.",
+                            "    })",
+                            "  }",
+                            "  if (jsonResponse.refresh_token != null) {",
+                            "    tc.setVar(\"refresh_token\", jsonResponse.refresh_token);",
+                            "    tc.test(\"Refresh Token extracted.\", function(){",
+                            "      expect(true) // The condition was already checked by the if clause.",
+                            "    })",
+                            "  }",
+                            "  if (jsonResponse.id_token != null) {",
+                            "    tc.setVar(\"id_token\", jsonResponse.id_token);",
+                            "    tc.test(\"ID Token extracted.\", function(){",
+                            "      expect(true) // The condition was already checked by the if clause.",
+                            "    })",
+                            "  }",
+                            "  if (jsonResponse.access_token == null && jsonResponse.refresh_token == null && jsonResponse.id_token == null) {",
+                            "    console.log(\"Unknown Error\");",
+                            "  }",
+                            "} else if(tc.response.status == 400) { // If the code is not valid an error is returned.",
+                            "  const jsonResponse = tc.response.json;",
+                            "  const error = jsonResponse.error;",
+                            "  const error_description = jsonResponse.error_description;",
+                            "  if (error != null && error_description != null) {",
+                            "    tc.test(\"error: \" +  error + \" | \" + \"error_description: \" + error_description, function(){",
+                            "      expect(true) // The condition was already checked by the if clause.",
+                            "    })",
+                            "  } else {",
+                            "    console.log(\"Unknown Error\");",
+                            "  }",
+                            "} else {",
+                            "  console.log(\"Unknown Response Status Code\");",
+                            "}"
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            "_id": "ada5f141-756d-418f-9061-618980f8611a",
+            "colId": "1ae91260-df6d-4177-b96c-5febbba02c09",
+            "containerId": "0c7688bd-0514-4dfa-9551-5fb47bb6567c",
+            "name": "2 Login Request",
+            "url": "{{loginUrl}}",
+            "method": "POST",
+            "sortNum": 20000,
+            "created": "2025-05-06T13:22:42.464Z",
+            "modified": "2025-05-06T13:22:42.464Z",
+            "headers": [],
+            "params": [],
+            "body": {
+                "type": "formencoded",
+                "raw": "",
+                "form": [
+                    {
+                        "name": "username",
+                        "value": "{{username}}"
+                    },
+                    {
+                        "name": "password",
+                        "value": "{{password}}"
+                    },
+                    {
+                        "name": "credentialId",
+                        "value": ""
+                    }
+                ]
+            },
+            "tests": [],
+            "postReq": {
+                "inlineScripts": [
+                    {
+                        "script": [
+                            "// After successful login the response to this request will be the auth. response with the code and/or tokens. We need to extract the code and/or tokens.\r",
+                            "if(tc.response.status == 302) {\r",
+                            "  const authRespUrl = tc.response.getHeader(\"location\");\r",
+                            "  // Check if the request resulted in an error and extract \"error\" and \"error_description\" parameters if this is the case. Otherwise check if \"code\", \"access_token\", or \"id_token\" parameters are present and extract them.\r",
+                            "  const regexError = /error=([^&#]*)/;\r",
+                            "  const regexCode = /code=([^&#]*)/;\r",
+                            "  const regexAccesstoken = /access_token=([^&#]*)/;\r",
+                            "  const regexIdtoken = /id_token=([^&#]*)/;\r",
+                            "  var error = null;\r",
+                            "  var code = null;\r",
+                            "  var access_token = null;\r",
+                            "  var id_token = null;\r",
+                            "  if(regexError.test(authRespUrl)) {\r",
+                            "    error = authRespUrl.match(regexError);\r",
+                            "    const regexErrorDescription = /error_description=([^&#]*)/;\r",
+                            "    const error_description = authRespUrl.match(regexErrorDescription);\r",
+                            "    tc.test(\"error: \" +  error[1] + \" | \" + \"error_description: \" + error_description[1], function(){\r",
+                            "      expect(true) // The condition was already checked by the if clause.\r",
+                            "    })\r",
+                            "  } else {\r",
+                            "    if (regexCode.test(authRespUrl)) {\r",
+                            "      code = authRespUrl.match(regexCode);\r",
+                            "      tc.setVar(\"code\", code[1]);\r",
+                            "      // console.log(\"code: \" + code[1]);\r",
+                            "      tc.test(\"You are successfully logged in. Code extracted. Proceed with the next request.\", function(){\r",
+                            "        expect(true) // The condition was already checked by the if clause.\r",
+                            "      })\r",
+                            "    }\r",
+                            "    if (regexAccesstoken.test(authRespUrl)) {\r",
+                            "      access_token = authRespUrl.match(regexAccesstoken);\r",
+                            "      tc.setVar(\"access_token\", access_token[1]);\r",
+                            "      // console.log(\"access_token: \" + access_token[1]);\r",
+                            "      tc.test(\"You are successfully logged in. Access Token extracted.\", function(){\r",
+                            "        expect(true) // The condition was already checked by the if clause.\r",
+                            "      })\r",
+                            "    }\r",
+                            "    if (regexIdtoken.test(authRespUrl)) {\r",
+                            "      id_token = authRespUrl.match(regexIdtoken);\r",
+                            "      tc.setVar(\"id_token\", id_token[1]);\r",
+                            "      // console.log(\"id_token: \" + id_token[1]);\r",
+                            "      tc.test(\"You are successfully logged in. ID Token extracted.\", function(){\r",
+                            "        expect(true) // The condition was already checked by the if clause.\r",
+                            "      })\r",
+                            "    }\r",
+                            "  }\r",
+                            "  if (error == null && code == null && access_token == null && id_token == null) {\r",
+                            "    console.log(\"Unknown Error\");\r",
+                            "  }\r",
+                            "} else if(tc.response.status == 400) { // If valid session cookies exist the IdP returns an error stating that the user is already logged in.\r",
+                            "  const responseText = tc.response.text;\r",
+                            "  const regexLoggedIn = /You are already logged in/;\r",
+                            "  if (regexLoggedIn.test(responseText)) {\r",
+                            "    tc.test(\"You are already logged in. Proceed with the next request.\", function(){\r",
+                            "      expect(true) // The condition was already checked by the if clause.\r",
+                            "    })\r",
+                            "  } else {\r",
+                            "    console.log(\"Unknown Error\");\r",
+                            "  }\r",
+                            "} else {\r",
+                            "  console.log(\"Unknown Response Status Code\");\r",
+                            "}"
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            "_id": "a93feda6-1259-4edd-876d-b004ec37d407",
+            "colId": "1ae91260-df6d-4177-b96c-5febbba02c09",
+            "containerId": "540ce55c-3ad7-4d7b-9b12-93396d660646",
+            "name": "Userinfo Request",
+            "url": "{{baseUrl}}/userinfo",
+            "method": "GET",
+            "sortNum": 20000,
+            "created": "2025-05-06T13:23:25.414Z",
+            "modified": "2025-05-06T13:23:25.414Z",
+            "headers": [
+                {
+                    "name": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                }
+            ],
+            "params": [],
+            "tests": []
+        },
+        {
+            "_id": "251fe419-717d-4473-858f-becc392da995",
+            "colId": "1ae91260-df6d-4177-b96c-5febbba02c09",
+            "containerId": "1dcbb1e8-eeba-40c6-a446-0d70f71380b2",
+            "name": "GET /time (API 2)",
+            "url": "{{api1Url}}/time",
+            "method": "GET",
+            "sortNum": 30000,
+            "created": "2025-04-10T13:25:30.846Z",
+            "modified": "2025-05-06T13:21:47.435Z",
+            "headers": [],
+            "params": [
+                {
+                    "name": "debug",
+                    "value": "1",
+                    "isDisabled": true,
+                    "isPath": false
+                }
+            ],
+            "auth": {
+                "type": "bearer",
+                "bearer": "{{access_token}}"
+            },
+            "tests": [],
+            "postReq": {
+                "inlineScripts": [
+                    {
+                        "script": [
+                            "// If the request is successful the tokens are extracted from the response.",
+                            "if(tc.response.status == 200) {",
+                            "  const jsonResponse = tc.response.json;",
+                            "  if (jsonResponse.access_token != null) {",
+                            "    tc.setVar(\"access_token\", jsonResponse.access_token);",
+                            "    tc.test(\"Access Token extracted.\", function(){",
+                            "      expect(true) // The condition was already checked by the if clause.",
+                            "    })",
+                            "  }",
+                            "  if (jsonResponse.refresh_token != null) {",
+                            "    tc.setVar(\"refresh_token\", jsonResponse.refresh_token);",
+                            "    tc.test(\"Refresh Token extracted.\", function(){",
+                            "      expect(true) // The condition was already checked by the if clause.",
+                            "    })",
+                            "  }",
+                            "  if (jsonResponse.id_token != null) {",
+                            "    tc.setVar(\"id_token\", jsonResponse.id_token);",
+                            "    tc.test(\"ID Token extracted.\", function(){",
+                            "      expect(true) // The condition was already checked by the if clause.",
+                            "    })",
+                            "  }",
+                            "  if (jsonResponse.access_token == null && jsonResponse.refresh_token == null && jsonResponse.id_token == null) {",
+                            "    console.log(\"Unknown Error\");",
+                            "  }",
+                            "} else if(tc.response.status == 400) { // If the code is not valid an error is returned.",
+                            "  const jsonResponse = tc.response.json;",
+                            "  const error = jsonResponse.error;",
+                            "  const error_description = jsonResponse.error_description;",
+                            "  if (error != null && error_description != null) {",
+                            "    tc.test(\"error: \" +  error + \" | \" + \"error_description: \" + error_description, function(){",
+                            "      expect(true) // The condition was already checked by the if clause.",
+                            "    })",
+                            "  } else {",
+                            "    console.log(\"Unknown Error\");",
+                            "  }",
+                            "} else {",
+                            "  console.log(\"Unknown Response Status Code\");",
+                            "}"
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            "_id": "f0c86280-a217-41ff-a122-917bbded017e",
+            "colId": "1ae91260-df6d-4177-b96c-5febbba02c09",
+            "containerId": "0c7688bd-0514-4dfa-9551-5fb47bb6567c",
+            "name": "3 Token Request",
+            "url": "{{baseUrl}}/token",
+            "method": "POST",
+            "sortNum": 30000,
+            "created": "2025-05-06T13:22:42.464Z",
+            "modified": "2025-05-06T13:22:42.464Z",
+            "headers": [],
+            "params": [],
+            "body": {
+                "type": "formencoded",
+                "raw": "",
+                "form": [
+                    {
+                        "name": "grant_type",
+                        "value": "authorization_code"
+                    },
+                    {
+                        "name": "redirect_uri",
+                        "value": "{{redirect_uri}}"
+                    },
+                    {
+                        "name": "code",
+                        "value": "{{code}}"
+                    },
+                    {
+                        "name": "code_verifier",
+                        "value": "{{code_verifier}}"
+                    }
+                ]
+            },
+            "auth": {
+                "type": "basic",
+                "basic": {
+                    "username": "{{client_id}}",
+                    "password": "{{client_secret}}"
+                }
+            },
+            "tests": [],
+            "postReq": {
+                "inlineScripts": [
+                    {
+                        "script": [
+                            "// If the request is successful the tokens are extracted from the response.",
+                            "if(tc.response.status == 200) {",
+                            "  const jsonResponse = tc.response.json;",
+                            "  if (jsonResponse.access_token != null) {",
+                            "    tc.setVar(\"access_token\", jsonResponse.access_token);",
+                            "    tc.test(\"Access Token extracted.\", function(){",
+                            "      expect(true) // The condition was already checked by the if clause.",
+                            "    })",
+                            "  }",
+                            "  if (jsonResponse.refresh_token != null) {",
+                            "    tc.setVar(\"refresh_token\", jsonResponse.refresh_token);",
+                            "    tc.test(\"Refresh Token extracted.\", function(){",
+                            "      expect(true) // The condition was already checked by the if clause.",
+                            "    })",
+                            "  }",
+                            "  if (jsonResponse.id_token != null) {",
+                            "    tc.setVar(\"id_token\", jsonResponse.id_token);",
+                            "    tc.test(\"ID Token extracted.\", function(){",
+                            "      expect(true) // The condition was already checked by the if clause.",
+                            "    })",
+                            "  }",
+                            "  if (jsonResponse.access_token == null && jsonResponse.refresh_token == null && jsonResponse.id_token == null) {",
+                            "    console.log(\"Unknown Error\");",
+                            "  }",
+                            "} else if(tc.response.status == 400) { // If the code is not valid an error is returned.",
+                            "  const jsonResponse = tc.response.json;",
+                            "  const error = jsonResponse.error;",
+                            "  const error_description = jsonResponse.error_description;",
+                            "  if (error != null && error_description != null) {",
+                            "    tc.test(\"error: \" +  error + \" | \" + \"error_description: \" + error_description, function(){",
+                            "      expect(true) // The condition was already checked by the if clause.",
+                            "    })",
+                            "  } else {",
+                            "    console.log(\"Unknown Error\");",
+                            "  }",
+                            "} else {",
+                            "  console.log(\"Unknown Response Status Code\");",
+                            "}"
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            "_id": "a33fe785-c72e-4580-b12a-d9f8dff84e57",
+            "colId": "1ae91260-df6d-4177-b96c-5febbba02c09",
+            "containerId": "540ce55c-3ad7-4d7b-9b12-93396d660646",
+            "name": "Token Exchange",
+            "url": "{{baseUrl}}/token",
+            "method": "POST",
+            "sortNum": 30000,
+            "created": "2025-05-06T13:23:32.736Z",
+            "modified": "2025-05-06T13:25:06.817Z",
+            "headers": [],
+            "params": [],
+            "body": {
+                "type": "formencoded",
+                "raw": "",
+                "form": [
+                    {
+                        "name": "grant_type",
+                        "value": "urn:ietf:params:oauth:grant-type:token-exchange"
+                    },
+                    {
+                        "name": "resource",
+                        "value": "",
+                        "isDisabled": true
+                    },
+                    {
+                        "name": "audience",
+                        "value": "",
+                        "isDisabled": true
+                    },
+                    {
+                        "name": "scope",
+                        "value": "readTime"
+                    },
+                    {
+                        "name": "requested_token_type",
+                        "value": "",
+                        "isDisabled": true
+                    },
+                    {
+                        "name": "subject_token",
+                        "value": "{{access_token}}"
+                    },
+                    {
+                        "name": "subject_token_type",
+                        "value": "urn:ietf:params:oauth:token-type:access_token",
+                        "isDisabled": true
+                    },
+                    {
+                        "name": "actor_token",
+                        "value": "",
+                        "isDisabled": true
+                    },
+                    {
+                        "name": "actor_token_type",
+                        "value": "",
+                        "isDisabled": true
+                    },
+                    {
+                        "name": "requested_issuer",
+                        "value": "Task-4-Domain-A",
+                        "isDisabled": true
+                    }
+                ]
+            },
+            "auth": {
+                "type": "basic",
+                "basic": {
+                    "username": "{{client_id}}",
+                    "password": "{{client_secret}}"
+                }
+            },
+            "tests": [],
+            "postReq": {
+                "inlineScripts": [
+                    {
+                        "script": [
+                            "// If the request is successful the tokens are extracted from the response.",
+                            "if(tc.response.status == 200) {",
+                            "  const jsonResponse = tc.response.json;",
+                            "  if (jsonResponse.access_token != null) {",
+                            "    tc.setVar(\"access_token\", jsonResponse.access_token);",
+                            "    tc.test(\"Access Token extracted.\", function(){",
+                            "      expect(true) // The condition was already checked by the if clause.",
+                            "    })",
+                            "  }",
+                            "  if (jsonResponse.refresh_token != null) {",
+                            "    tc.setVar(\"refresh_token\", jsonResponse.refresh_token);",
+                            "    tc.test(\"Refresh Token extracted.\", function(){",
+                            "      expect(true) // The condition was already checked by the if clause.",
+                            "    })",
+                            "  }",
+                            "  if (jsonResponse.id_token != null) {",
+                            "    tc.setVar(\"id_token\", jsonResponse.id_token);",
+                            "    tc.test(\"ID Token extracted.\", function(){",
+                            "      expect(true) // The condition was already checked by the if clause.",
+                            "    })",
+                            "  }",
+                            "  if (jsonResponse.access_token == null && jsonResponse.refresh_token == null && jsonResponse.id_token == null) {",
+                            "    console.log(\"Unknown Error\");",
+                            "  }",
+                            "} else if(tc.response.status == 400) { // If the client credentials are not valid or the client is not authorized for the flow or scope an error is returned.",
+                            "  const jsonResponse = tc.response.json;",
+                            "  const error = jsonResponse.error;",
+                            "  const error_description = jsonResponse.error_description;",
+                            "  if (error != null && error_description != null) {",
+                            "    tc.test(\"error: \" +  error + \" | \" + \"error_description: \" + error_description, function(){",
+                            "      expect(true) // The condition was already checked by the if clause.",
+                            "    })",
+                            "  } else {",
+                            "    console.log(\"Unknown Error\");",
+                            "  }",
+                            "} else {",
+                            "  console.log(\"Unknown Response Status Code\");",
+                            "}"
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            "_id": "6a69c397-263f-49dc-9051-4179e4169400",
+            "colId": "1ae91260-df6d-4177-b96c-5febbba02c09",
+            "containerId": "1dcbb1e8-eeba-40c6-a446-0d70f71380b2",
+            "name": "POST /status (API 1)",
+            "url": "{{api1Url}}/status",
+            "method": "POST",
+            "sortNum": 40000,
+            "created": "2025-04-10T11:36:42.941Z",
+            "modified": "2025-05-06T13:21:43.851Z",
+            "headers": [],
+            "params": [
+                {
+                    "name": "debug",
+                    "value": "1",
+                    "isDisabled": true,
+                    "isPath": false
+                },
+                {
+                    "name": "tokenExchange",
+                    "value": "1",
+                    "isDisabled": true,
+                    "isPath": false
+                }
+            ],
+            "body": {
+                "type": "json",
+                "raw": "{\"status\":\"My new status!\"}",
+                "form": []
+            },
+            "auth": {
+                "type": "bearer",
+                "bearer": "{{access_token}}"
+            },
+            "tests": [],
+            "postReq": {
+                "inlineScripts": [
+                    {
+                        "script": [
+                            "// If the request is successful the tokens are extracted from the response.",
+                            "if(tc.response.status == 200) {",
+                            "  const jsonResponse = tc.response.json;",
+                            "  if (jsonResponse.access_token != null) {",
+                            "    tc.setVar(\"access_token\", jsonResponse.access_token);",
+                            "    tc.test(\"Access Token extracted.\", function(){",
+                            "      expect(true) // The condition was already checked by the if clause.",
+                            "    })",
+                            "  }",
+                            "  if (jsonResponse.refresh_token != null) {",
+                            "    tc.setVar(\"refresh_token\", jsonResponse.refresh_token);",
+                            "    tc.test(\"Refresh Token extracted.\", function(){",
+                            "      expect(true) // The condition was already checked by the if clause.",
+                            "    })",
+                            "  }",
+                            "  if (jsonResponse.id_token != null) {",
+                            "    tc.setVar(\"id_token\", jsonResponse.id_token);",
+                            "    tc.test(\"ID Token extracted.\", function(){",
+                            "      expect(true) // The condition was already checked by the if clause.",
+                            "    })",
+                            "  }",
+                            "  if (jsonResponse.access_token == null && jsonResponse.refresh_token == null && jsonResponse.id_token == null) {",
+                            "    console.log(\"Unknown Error\");",
+                            "  }",
+                            "} else if(tc.response.status == 400) { // If the code is not valid an error is returned.",
+                            "  const jsonResponse = tc.response.json;",
+                            "  const error = jsonResponse.error;",
+                            "  const error_description = jsonResponse.error_description;",
+                            "  if (error != null && error_description != null) {",
+                            "    tc.test(\"error: \" +  error + \" | \" + \"error_description: \" + error_description, function(){",
+                            "      expect(true) // The condition was already checked by the if clause.",
+                            "    })",
+                            "  } else {",
+                            "    console.log(\"Unknown Error\");",
+                            "  }",
+                            "} else {",
+                            "  console.log(\"Unknown Response Status Code\");",
+                            "}"
+                        ]
+                    }
+                ]
+            }
+        }
+    ]
+}

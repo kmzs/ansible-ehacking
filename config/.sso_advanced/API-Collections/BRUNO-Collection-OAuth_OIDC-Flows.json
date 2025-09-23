@@ -1,0 +1,1552 @@
+{
+  "name": "OAuth / OIDC Flows",
+  "version": "1",
+  "items": [
+    {
+      "type": "folder",
+      "name": "Client Credentials Flow",
+      "filename": "Client Credentials Flow",
+      "seq": 4,
+      "root": {
+        "meta": {
+          "name": "Client Credentials Flow",
+          "seq": 4
+        }
+      },
+      "items": [
+        {
+          "type": "http",
+          "name": "Token Request",
+          "filename": "Token Request.bru",
+          "seq": 1,
+          "request": {
+            "url": "{{baseUrl}}/token",
+            "method": "POST",
+            "headers": [],
+            "params": [],
+            "body": {
+              "mode": "formUrlEncoded",
+              "formUrlEncoded": [
+                {
+                  "name": "grant_type",
+                  "value": "client_credentials",
+                  "enabled": true
+                },
+                {
+                  "name": "scope",
+                  "value": "openid",
+                  "enabled": true
+                }
+              ],
+              "multipartForm": [],
+              "file": []
+            },
+            "script": {
+              "res": "// If the request is successful the tokens are extracted from the response.\nif(res.getStatus() == 200) {\n  const jsonResponse = res.getBody();\n  if (jsonResponse.access_token != null) {\n    bru.setEnvVar(\"access_token\", jsonResponse.access_token);\n    test(\"Access Token extracted.\", function(){\n      expect(true);\n    }); // The condition was already checked by the if clause.\n  }\n  if (jsonResponse.refresh_token != null) {\n    bru.setEnvVar(\"refresh_token\", jsonResponse.refresh_token);\n    test(\"Refresh Token extracted.\", function(){\n      expect(true);\n    }); // The condition was already checked by the if clause.\n  }\n  if (jsonResponse.id_token != null) {\n    bru.setEnvVar(\"id_token\", jsonResponse.id_token);\n    test(\"ID Token extracted.\", function(){\n      expect(true);\n    }); // The condition was already checked by the if clause.\n  }\n  if (jsonResponse.access_token == null && jsonResponse.refresh_token == null && jsonResponse.id_token == null) {\n    console.log(\"Unknown Error\");\n  }\n} else if(res.getStatus() == 400) { // If the client credentials are not valid or the client is not authorized for the flow or scope, an error is returned.\n  const jsonResponse = res.getBody();\n  const error = jsonResponse.error;\n  const error_description = jsonResponse.error_description;\n  if (error != null && error_description != null) {\n    test(\"error: \" +  error + \" | \" + \"error_description: \" + error_description, function(){\n      expect(true);\n    }); // The condition was already checked by the if clause.\n  } else {\n    console.log(\"Unknown Error\");\n  }\n} else {\n  console.log(\"Unknown Response Status Code\");\n}"
+            },
+            "vars": {},
+            "assertions": [],
+            "tests": "",
+            "docs": "",
+            "auth": {
+              "mode": "basic",
+              "basic": {
+                "username": "{{client_id}}",
+                "password": "{{client_secret}}"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "folder",
+      "name": "Code Flow",
+      "filename": "Code Flow",
+      "seq": 1,
+      "root": {
+        "request": {
+          "script": {}
+        },
+        "meta": {
+          "name": "Code Flow",
+          "seq": 1
+        }
+      },
+      "items": [
+        {
+          "type": "http",
+          "name": "1 Auth. Request",
+          "filename": "1 Auth. Request.bru",
+          "seq": 1,
+          "request": {
+            "url": "{{baseUrl}}/auth?client_id={{client_id}}&redirect_uri={{redirect_uri}}&state={{state}}&nonce={{nonce}}&code_challenge={{code_challenge}}&code_challenge_method={{code_challenge_method}}&response_type=code&scope=openid+profile",
+            "method": "GET",
+            "headers": [],
+            "params": [
+              {
+                "name": "client_id",
+                "value": "{{client_id}}",
+                "type": "query",
+                "enabled": true
+              },
+              {
+                "name": "redirect_uri",
+                "value": "{{redirect_uri}}",
+                "type": "query",
+                "enabled": true
+              },
+              {
+                "name": "state",
+                "value": "{{state}}",
+                "type": "query",
+                "enabled": true
+              },
+              {
+                "name": "nonce",
+                "value": "{{nonce}}",
+                "type": "query",
+                "enabled": true
+              },
+              {
+                "name": "code_challenge",
+                "value": "{{code_challenge}}",
+                "type": "query",
+                "enabled": true
+              },
+              {
+                "name": "code_challenge_method",
+                "value": "{{code_challenge_method}}",
+                "type": "query",
+                "enabled": true
+              },
+              {
+                "name": "response_type",
+                "value": "code",
+                "type": "query",
+                "enabled": true
+              },
+              {
+                "name": "scope",
+                "value": "openid+profile",
+                "type": "query",
+                "enabled": true
+              }
+            ],
+            "body": {
+              "mode": "none",
+              "formUrlEncoded": [],
+              "multipartForm": [],
+              "file": []
+            },
+            "script": {
+              "res": "// If no valid session cookies exist the response to this request will be the login form for the user. We need to extract the URL to send the user's credentials to in the Login Request.\nif(res.getStatus() == 200) {\n  // Load node.js module cheerio\n  const cheerio = require('cheerio');\n  // Parse HTML response\n  const $ = cheerio.load(res.getBody());\n  // Extract important pieces from response\n  const loginUrl = $('#kc-form-login').attr('action');\n  if (loginUrl != null) {\n    // Set variables\n    bru.setEnvVar(\"loginUrl\", loginUrl);\n    // console.log(\"loginUrl: \" + loginUrl);\n    test(\"You need to log in. Proceed with the Login Request.\", function () {\n      expect(true);\n    }); // The condition was already checked by the if clause.\n  } else {\n    console.log(\"Unknown Error\");\n  }\n} else if(res.getStatus() == 302) { // If valid session cookies exist the response to this request will be the auth. response with the tokens. We need to extract the tokens.\n  const authRespUrl = res.getHeader(\"location\");\n  // Check if the request resulted in an error and extract \"error\" and \"error_description\" parameters if this is the case. Otherwise check if \"code\", \"access_token\", or \"id_token\" parameter are present and extract them.\n  const regexError = /error=([^&#]*)/;\n  const regexCode = /code=([^&#]*)/;\n  const regexAccesstoken = /access_token=([^&#]*)/;\n  const regexIdtoken = /id_token=([^&#]*)/;\n  var error = null;\n  var code = null;\n  var access_token = null;\n  var id_token = null;\n  if(regexError.test(authRespUrl)) {\n    error = authRespUrl.match(regexError);\n    const regexErrorDescription = /error_description=([^&#]*)/;\n    const error_description = authRespUrl.match(regexErrorDescription);\n    test(\"error: \" +  error[1] + \" | \" + \"error_description: \" + error_description[1], function () {\n      expect(true);\n    }); // The condition was already checked by the if clause.\n  } else {\n    if (regexCode.test(authRespUrl)) {\n      code = authRespUrl.match(regexCode);\n      bru.setEnvVar(\"code\", code[1]);\n      // console.log(\"code: \" + code[1]);\n      test(\"You are already logged in. Code extracted.\", function () {\n        expect(true);\n      }); // The condition was already checked by the if clause.\n    }\n    if (regexAccesstoken.test(authRespUrl)) {\n      access_token = authRespUrl.match(regexAccesstoken);\n      bru.setEnvVar(\"access_token\", access_token[1]);\n      // console.log(\"access_token: \" + access_token[1]);\n      test(\"You are already logged in. Access Token extracted.\", function () {\n        expect(true);\n      }); // The condition was already checked by the if clause.\n    }\n    if (regexIdtoken.test(authRespUrl)) {\n      id_token = authRespUrl.match(regexIdtoken);\n      bru.setEnvVar(\"id_token\", id_token[1]);\n      // console.log(\"id_token: \" + id_token[1]);\n      test(\"You are already logged in. ID Token extracted.\", function () {\n        expect(true);\n      }); // The condition was already checked by the if clause.\n    }\n  }\n  if (error == null && code == null && access_token == null && id_token == null) {\n    console.log(\"Unknown Error\");\n  }\n} else {\n  console.log(\"Unknown Response Status Code\");\n}"
+            },
+            "vars": {},
+            "assertions": [],
+            "tests": "",
+            "docs": "",
+            "auth": {
+              "mode": "none"
+            }
+          }
+        },
+        {
+          "type": "http",
+          "name": "2 Login Request",
+          "filename": "2 Login Request.bru",
+          "seq": 2,
+          "request": {
+            "url": "{{loginUrl}}",
+            "method": "POST",
+            "headers": [],
+            "params": [],
+            "body": {
+              "mode": "formUrlEncoded",
+              "formUrlEncoded": [
+                {
+                  "name": "username",
+                  "value": "{{username}}",
+                  "enabled": true
+                },
+                {
+                  "name": "password",
+                  "value": "{{password}}",
+                  "enabled": true
+                },
+                {
+                  "name": "credentialId",
+                  "value": "",
+                  "enabled": true
+                }
+              ],
+              "multipartForm": [],
+              "file": []
+            },
+            "script": {
+              "res": "// After successful login the response to this request will be the auth. response with the code and/or tokens. We need to extract the code and/or tokens.\nif(res.getStatus() == 302) {\n  const authRespUrl = res.getHeader(\"location\");\n  // Check if the request resulted in an error and extract \"error\" and \"error_description\" parameters if this is the case. Otherwise check if \"code\", \"access_token\", or \"id_token\" parameters are present and extract them.\n  const regexError = /error=([^&#]*)/;\n  const regexCode = /code=([^&#]*)/;\n  const regexAccesstoken = /access_token=([^&#]*)/;\n  const regexIdtoken = /id_token=([^&#]*)/;\n  var error = null;\n  var code = null;\n  var access_token = null;\n  var id_token = null;\n  if(regexError.test(authRespUrl)) {\n    error = authRespUrl.match(regexError);\n    const regexErrorDescription = /error_description=([^&#]*)/;\n    const error_description = authRespUrl.match(regexErrorDescription);\n    test(\"error: \" +  error[1] + \" | \" + \"error_description: \" + error_description[1], function () {\n      expect(true);\n    }); // The condition was already checked by the if clause.\n  } else {\n    if (regexCode.test(authRespUrl)) {\n      code = authRespUrl.match(regexCode);\n      bru.setEnvVar(\"code\", code[1]);\n      // console.log(\"code: \" + code[1]);\n      test(\"You are successfully logged in. Code extracted. Proceed with the next request.\", function () {\n        expect(true);\n      }); // The condition was already checked by the if clause.\n    }\n    if (regexAccesstoken.test(authRespUrl)) {\n      access_token = authRespUrl.match(regexAccesstoken);\n      bru.setEnvVar(\"access_token\", access_token[1]);\n      // console.log(\"access_token: \" + access_token[1]);\n      test(\"You are successfully logged in. Access Token extracted.\", function(){\n        expect(true);\n      }); // The condition was already checked by the if clause.\n\n    }\n    if (regexIdtoken.test(authRespUrl)) {\n      id_token = authRespUrl.match(regexIdtoken);\n      bru.setEnvVar(\"id_token\", id_token[1]);\n      // console.log(\"id_token: \" + id_token[1]);\n      test(\"You are successfully logged in. ID Token extracted.\", function(){\n        expect(true);\n      }); // The condition was already checked by the if clause.\n\n    }\n  }\n  if (error == null && code == null && access_token == null && id_token == null) {\n    console.log(\"Unknown Error\");\n  }\n} else if(res.getStatus() == 400) { // If valid session cookies exist the IdP returns an error stating that the user is already logged in.\n  const responseText = res.getBody();\n  const regexLoggedIn = /You are already logged in/;\n  if (regexLoggedIn.test(responseText)) {\n    test(\"You are already logged in. Proceed with the next request.\", function(){\n      expect(true);\n    }); // The condition was already checked by the if clause.\n  } else {\n    console.log(\"Unknown Error\");\n  }\n} else {\n  console.log(\"Unknown Response Status Code\");\n}"
+            },
+            "vars": {},
+            "assertions": [],
+            "tests": "",
+            "docs": "",
+            "auth": {
+              "mode": "none"
+            }
+          }
+        },
+        {
+          "type": "http",
+          "name": "3 Token Request (JWT)",
+          "filename": "3 Token Request (JWT).bru",
+          "seq": 4,
+          "request": {
+            "url": "{{baseUrl}}/token",
+            "method": "POST",
+            "headers": [],
+            "params": [],
+            "body": {
+              "mode": "formUrlEncoded",
+              "formUrlEncoded": [
+                {
+                  "name": "grant_type",
+                  "value": "authorization_code",
+                  "enabled": true
+                },
+                {
+                  "name": "redirect_uri",
+                  "value": "{{redirect_uri}}",
+                  "enabled": true
+                },
+                {
+                  "name": "code",
+                  "value": "{{code}}",
+                  "enabled": true
+                },
+                {
+                  "name": "code_verifier",
+                  "value": "{{code_verifier}}",
+                  "enabled": true
+                },
+                {
+                  "name": "client_assertion",
+                  "value": "{{private_key_jwt}}",
+                  "enabled": true
+                },
+                {
+                  "name": "client_assertion_type",
+                  "value": "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+                  "enabled": true
+                }
+              ],
+              "multipartForm": [],
+              "file": []
+            },
+            "script": {
+              "req": "// Load node.js module jsonwebtoken and uuid\nconst jsonwebtoken = await require('jsonwebtoken');\nconst uuid = await require('uuid');\n\n// Load private key from variable and remove escaping of line breaks\nconst private_key = bru.getEnvVar(\"client_private_key\").replace(/\\\\n/g, \"\\n\");\n\n// Load claims from environment variables\nconst client_id = bru.getEnvVar(\"client_id\");\nconst aud = bru.getEnvVar(\"baseUrl\") + \"/token\";\n\n// Generate jti\nconst jti = uuid.v4();\n\n// Sign token\nconst token = jsonwebtoken.sign({\n  iss: client_id,\n  sub: client_id,\n  aud: aud,\n  jti: jti,\n  exp: Math.floor(Date.now() / 1000) + (5 * 60) \n}, private_key, { algorithm: 'RS256' });\nconsole.log(token);\n\n// Set token to environment variable\nbru.setEnvVar(\"private_key_jwt\", token);",
+              "res": "// If the request is successful the tokens are extracted from the response.\nif(res.getStatus() == 200) {\n  const jsonResponse = res.getBody();\n  if (jsonResponse.access_token != null) {\n    bru.setEnvVar(\"access_token\", jsonResponse.access_token);\n    test(\"Access Token extracted.\", function(){\n      expect(true);\n    }); // The condition was already checked by the if clause.\n  }\n  if (jsonResponse.refresh_token != null) {\n    bru.setEnvVar(\"refresh_token\", jsonResponse.refresh_token);\n    test(\"Refresh Token extracted.\", function(){\n      expect(true);\n    }); // The condition was already checked by the if clause.\n  }\n  if (jsonResponse.id_token != null) {\n    bru.setEnvVar(\"id_token\", jsonResponse.id_token);\n    test(\"ID Token extracted.\", function(){\n      expect(true);\n    }); // The condition was already checked by the if clause.\n  }\n  if (jsonResponse.access_token == null && jsonResponse.refresh_token == null && jsonResponse.id_token == null) {\n    console.log(\"Unknown Error\");\n  }\n} else if(res.getStatus() == 400) { // If the client credentials are not valid or the client is not authorized for the flow or scope, an error is returned.\n  const jsonResponse = res.getBody();\n  const error = jsonResponse.error;\n  const error_description = jsonResponse.error_description;\n  if (error != null && error_description != null) {\n    test(\"error: \" +  error + \" | \" + \"error_description: \" + error_description, function(){\n      expect(true);\n    }); // The condition was already checked by the if clause.\n  } else {\n    console.log(\"Unknown Error\");\n  }\n} else {\n  console.log(\"Unknown Response Status Code\");\n}"
+            },
+            "vars": {},
+            "assertions": [],
+            "tests": "",
+            "docs": "",
+            "auth": {
+              "mode": "none"
+            }
+          }
+        },
+        {
+          "type": "http",
+          "name": "3 Token Request",
+          "filename": "3 Token Request.bru",
+          "seq": 3,
+          "request": {
+            "url": "{{baseUrl}}/token",
+            "method": "POST",
+            "headers": [],
+            "params": [],
+            "body": {
+              "mode": "formUrlEncoded",
+              "formUrlEncoded": [
+                {
+                  "name": "grant_type",
+                  "value": "authorization_code",
+                  "enabled": true
+                },
+                {
+                  "name": "redirect_uri",
+                  "value": "{{redirect_uri}}",
+                  "enabled": true
+                },
+                {
+                  "name": "code",
+                  "value": "{{code}}",
+                  "enabled": true
+                },
+                {
+                  "name": "code_verifier",
+                  "value": "{{code_verifier}}",
+                  "enabled": true
+                }
+              ],
+              "multipartForm": [],
+              "file": []
+            },
+            "script": {
+              "res": "// If the request is successful the tokens are extracted from the response.\nif(res.getStatus() == 200) {\n  const jsonResponse = res.getBody();\n  if (jsonResponse.access_token != null) {\n    bru.setEnvVar(\"access_token\", jsonResponse.access_token);\n    test(\"Access Token extracted.\", function(){\n      expect(true);\n    }); // The condition was already checked by the if clause.\n  }\n  if (jsonResponse.refresh_token != null) {\n    bru.setEnvVar(\"refresh_token\", jsonResponse.refresh_token);\n    test(\"Refresh Token extracted.\", function(){\n      expect(true);\n    }); // The condition was already checked by the if clause.\n  }\n  if (jsonResponse.id_token != null) {\n    bru.setEnvVar(\"id_token\", jsonResponse.id_token);\n    test(\"ID Token extracted.\", function(){\n      expect(true);\n    }); // The condition was already checked by the if clause.\n  }\n  if (jsonResponse.access_token == null && jsonResponse.refresh_token == null && jsonResponse.id_token == null) {\n    console.log(\"Unknown Error\");\n  }\n} else if(res.getStatus() == 400) { // If the client credentials are not valid or the client is not authorized for the flow or scope, an error is returned.\n  const jsonResponse = res.getBody();\n  const error = jsonResponse.error;\n  const error_description = jsonResponse.error_description;\n  if (error != null && error_description != null) {\n    test(\"error: \" +  error + \" | \" + \"error_description: \" + error_description, function(){\n      expect(true);\n    }); // The condition was already checked by the if clause.\n  } else {\n    console.log(\"Unknown Error\");\n  }\n} else {\n  console.log(\"Unknown Response Status Code\");\n}"
+            },
+            "vars": {},
+            "assertions": [],
+            "tests": "",
+            "docs": "",
+            "auth": {
+              "mode": "basic",
+              "basic": {
+                "username": "{{client_id}}",
+                "password": "{{client_secret}}"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "folder",
+      "name": "Device Grant",
+      "filename": "Device Grant",
+      "seq": 5,
+      "root": {
+        "meta": {
+          "name": "Device Grant",
+          "seq": 5
+        }
+      },
+      "items": [
+        {
+          "type": "http",
+          "name": "1 Device Authorization Request",
+          "filename": "1 Device Authorization Request.bru",
+          "seq": 1,
+          "request": {
+            "url": "{{baseUrl}}/auth/device",
+            "method": "POST",
+            "headers": [],
+            "params": [],
+            "body": {
+              "mode": "formUrlEncoded",
+              "formUrlEncoded": [
+                {
+                  "name": "scope",
+                  "value": "openid",
+                  "enabled": true
+                },
+                {
+                  "name": "client_id",
+                  "value": "{{client_id}}",
+                  "enabled": false
+                },
+                {
+                  "name": "code_challenge",
+                  "value": "{{code_challenge}}",
+                  "enabled": false
+                },
+                {
+                  "name": "code_challenge_method",
+                  "value": "{{code_challenge_method}}",
+                  "enabled": false
+                }
+              ],
+              "multipartForm": [],
+              "file": []
+            },
+            "script": {
+              "res": "// If the request is successful the tokens are extracted from the response.\nif(res.getStatus() == 200) {\n  const jsonResponse = res.getBody();\n  if (jsonResponse.device_code != null) {\n    bru.setEnvVar(\"device_code\", jsonResponse.device_code);\n    // test(\"Device Code extracted.\", function(){\n    //   expect(true);\n    // }); // The condition was already checked by the if clause.\n  }\n  if (jsonResponse.verification_uri != null) {\n    bru.setEnvVar(\"verification_uri\", jsonResponse.verification_uri);\n    test(\"Open the Verification URI in a browser and enter the User Code: \" + jsonResponse.verification_uri, function(){\n      expect(true);\n    }); // The condition was already checked by the if clause.\n  }\n  if (jsonResponse.user_code != null) {\n    bru.setEnvVar(\"user_code\", jsonResponse.user_code);\n    test(\"User Code: \" + jsonResponse.user_code, function(){\n      expect(true);\n    }); // The condition was already checked by the if clause.\n  } else {\n    test(\"Error extracting User Code.\", function(){\n      expect(true);\n    }); // The condition was already checked by the if clause.\n  }\n  if (jsonResponse.device_code == null && jsonResponse.user_code == null && jsonResponse.verification_uri == null) {\n    console.log(\"Unknown Error\");\n  }\n} else if(res.getStatus() == 400) { // If the client credentials are not valid or the client is not authorized for the flow or scope an error is returned.\n  const jsonResponse = res.getBody();\n  const error = jsonResponse.error;\n  const error_description = jsonResponse.error_description;\n  if (error != null && error_description != null) {\n    test(\"error: \" +  error + \" | \" + \"error_description: \" + error_description, function(){\n      expect(true);\n    }); // The condition was already checked by the if clause.\n  } else {\n    console.log(\"Unknown Error\");\n  }\n} else {\n  console.log(\"Unknown Response Status Code\");\n}"
+            },
+            "vars": {},
+            "assertions": [],
+            "tests": "",
+            "docs": "",
+            "auth": {
+              "mode": "basic",
+              "basic": {
+                "username": "{{client_id}}",
+                "password": "{{client_secret}}"
+              }
+            }
+          }
+        },
+        {
+          "type": "http",
+          "name": "2 Device Access Token Request",
+          "filename": "2 Device Access Token Request.bru",
+          "seq": 2,
+          "request": {
+            "url": "{{baseUrl}}/token",
+            "method": "POST",
+            "headers": [],
+            "params": [],
+            "body": {
+              "mode": "formUrlEncoded",
+              "formUrlEncoded": [
+                {
+                  "name": "grant_type",
+                  "value": "urn:ietf:params:oauth:grant-type:device_code",
+                  "enabled": true
+                },
+                {
+                  "name": "device_code",
+                  "value": "{{device_code}}",
+                  "enabled": true
+                },
+                {
+                  "name": "client_id",
+                  "value": "{{client_id}}",
+                  "enabled": false
+                }
+              ],
+              "multipartForm": [],
+              "file": []
+            },
+            "script": {
+              "res": "// If the request is successful the tokens are extracted from the response.\nif(res.getStatus() == 200) {\n  const jsonResponse = res.getBody();\n  if (jsonResponse.access_token != null) {\n    bru.setEnvVar(\"access_token\", jsonResponse.access_token);\n    test(\"Access Token extracted.\", function(){\n      expect(true);\n    }); // The condition was already checked by the if clause.\n  }\n  if (jsonResponse.refresh_token != null) {\n    bru.setEnvVar(\"refresh_token\", jsonResponse.refresh_token);\n    test(\"Refresh Token extracted.\", function(){\n      expect(true);\n    }); // The condition was already checked by the if clause.\n  }\n  if (jsonResponse.id_token != null) {\n    bru.setEnvVar(\"id_token\", jsonResponse.id_token);\n    test(\"ID Token extracted.\", function(){\n      expect(true);\n    }); // The condition was already checked by the if clause.\n  }\n  if (jsonResponse.access_token == null && jsonResponse.refresh_token == null && jsonResponse.id_token == null) {\n    console.log(\"Unknown Error\");\n  }\n} else if(res.getStatus() == 400) { // If the client credentials are not valid or the client is not authorized for the flow or scope, an error is returned.\n  const jsonResponse = res.getBody();\n  const error = jsonResponse.error;\n  const error_description = jsonResponse.error_description;\n  if (error != null && error_description != null) {\n    test(\"error: \" +  error + \" | \" + \"error_description: \" + error_description, function(){\n      expect(true);\n    }); // The condition was already checked by the if clause.\n  } else {\n    console.log(\"Unknown Error\");\n  }\n} else {\n  console.log(\"Unknown Response Status Code\");\n}"
+            },
+            "vars": {},
+            "assertions": [],
+            "tests": "",
+            "docs": "",
+            "auth": {
+              "mode": "basic",
+              "basic": {
+                "username": "{{client_id}}",
+                "password": "{{client_secret}}"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "folder",
+      "name": "Hybrid Flow",
+      "filename": "Hybrid Flow",
+      "seq": 3,
+      "root": {
+        "meta": {
+          "name": "Hybrid Flow",
+          "seq": 3
+        }
+      },
+      "items": [
+        {
+          "type": "http",
+          "name": "1 Auth. Request",
+          "filename": "1 Auth. Request.bru",
+          "seq": 1,
+          "request": {
+            "url": "{{baseUrl}}/auth?client_id={{client_id}}&redirect_uri={{redirect_uri}}&state={{state}}&nonce={{nonce}}&code_challenge={{code_challenge}}&code_challenge_method={{code_challenge_method}}&response_type=code+id_token&scope=openid+profile",
+            "method": "GET",
+            "headers": [],
+            "params": [
+              {
+                "name": "client_id",
+                "value": "{{client_id}}",
+                "type": "query",
+                "enabled": true
+              },
+              {
+                "name": "redirect_uri",
+                "value": "{{redirect_uri}}",
+                "type": "query",
+                "enabled": true
+              },
+              {
+                "name": "state",
+                "value": "{{state}}",
+                "type": "query",
+                "enabled": true
+              },
+              {
+                "name": "nonce",
+                "value": "{{nonce}}",
+                "type": "query",
+                "enabled": true
+              },
+              {
+                "name": "code_challenge",
+                "value": "{{code_challenge}}",
+                "type": "query",
+                "enabled": true
+              },
+              {
+                "name": "code_challenge_method",
+                "value": "{{code_challenge_method}}",
+                "type": "query",
+                "enabled": true
+              },
+              {
+                "name": "response_type",
+                "value": "code+id_token",
+                "type": "query",
+                "enabled": true
+              },
+              {
+                "name": "scope",
+                "value": "openid+profile",
+                "type": "query",
+                "enabled": true
+              }
+            ],
+            "body": {
+              "mode": "none",
+              "formUrlEncoded": [],
+              "multipartForm": [],
+              "file": []
+            },
+            "script": {
+              "res": "// If no valid session cookies exist the response to this request will be the login form for the user. We need to extract the URL to send the user's credentials to in the Login Request.\nif(res.getStatus() == 200) {\n  // Load node.js module cheerio\n  const cheerio = require('cheerio');\n  // Parse HTML response\n  const $ = cheerio.load(res.getBody());\n  // Extract important pieces from response\n  const loginUrl = $('#kc-form-login').attr('action');\n  if (loginUrl != null) {\n    // Set variables\n    bru.setEnvVar(\"loginUrl\", loginUrl);\n    // console.log(\"loginUrl: \" + loginUrl);\n    test(\"You need to log in. Proceed with the Login Request.\", function () {\n      expect(true);\n    }); // The condition was already checked by the if clause.\n  } else {\n    console.log(\"Unknown Error\");\n  }\n} else if(res.getStatus() == 302) { // If valid session cookies exist the response to this request will be the auth. response with the tokens. We need to extract the tokens.\n  const authRespUrl = res.getHeader(\"location\");\n  // Check if the request resulted in an error and extract \"error\" and \"error_description\" parameters if this is the case. Otherwise check if \"code\", \"access_token\", or \"id_token\" parameter are present and extract them.\n  const regexError = /error=([^&#]*)/;\n  const regexCode = /code=([^&#]*)/;\n  const regexAccesstoken = /access_token=([^&#]*)/;\n  const regexIdtoken = /id_token=([^&#]*)/;\n  var error = null;\n  var code = null;\n  var access_token = null;\n  var id_token = null;\n  if(regexError.test(authRespUrl)) {\n    error = authRespUrl.match(regexError);\n    const regexErrorDescription = /error_description=([^&#]*)/;\n    const error_description = authRespUrl.match(regexErrorDescription);\n    test(\"error: \" +  error[1] + \" | \" + \"error_description: \" + error_description[1], function () {\n      expect(true);\n    }); // The condition was already checked by the if clause.\n  } else {\n    if (regexCode.test(authRespUrl)) {\n      code = authRespUrl.match(regexCode);\n      bru.setEnvVar(\"code\", code[1]);\n      // console.log(\"code: \" + code[1]);\n      test(\"You are already logged in. Code extracted.\", function () {\n        expect(true);\n      }); // The condition was already checked by the if clause.\n    }\n    if (regexAccesstoken.test(authRespUrl)) {\n      access_token = authRespUrl.match(regexAccesstoken);\n      bru.setEnvVar(\"access_token\", access_token[1]);\n      // console.log(\"access_token: \" + access_token[1]);\n      test(\"You are already logged in. Access Token extracted.\", function () {\n        expect(true);\n      }); // The condition was already checked by the if clause.\n    }\n    if (regexIdtoken.test(authRespUrl)) {\n      id_token = authRespUrl.match(regexIdtoken);\n      bru.setEnvVar(\"id_token\", id_token[1]);\n      // console.log(\"id_token: \" + id_token[1]);\n      test(\"You are already logged in. ID Token extracted.\", function () {\n        expect(true);\n      }); // The condition was already checked by the if clause.\n    }\n  }\n  if (error == null && code == null && access_token == null && id_token == null) {\n    console.log(\"Unknown Error\");\n  }\n} else {\n  console.log(\"Unknown Response Status Code\");\n}"
+            },
+            "vars": {},
+            "assertions": [],
+            "tests": "",
+            "docs": "",
+            "auth": {
+              "mode": "none"
+            }
+          }
+        },
+        {
+          "type": "http",
+          "name": "2 Login Request",
+          "filename": "2 Login Request.bru",
+          "seq": 2,
+          "request": {
+            "url": "{{loginUrl}}",
+            "method": "POST",
+            "headers": [],
+            "params": [],
+            "body": {
+              "mode": "formUrlEncoded",
+              "formUrlEncoded": [
+                {
+                  "name": "username",
+                  "value": "{{username}}",
+                  "enabled": true
+                },
+                {
+                  "name": "password",
+                  "value": "{{password}}",
+                  "enabled": true
+                },
+                {
+                  "name": "credentialId",
+                  "value": "",
+                  "enabled": true
+                }
+              ],
+              "multipartForm": [],
+              "file": []
+            },
+            "script": {
+              "res": "// After successful login the response to this request will be the auth. response with the code and/or tokens. We need to extract the code and/or tokens.\nif(res.getStatus() == 302) {\n  const authRespUrl = res.getHeader(\"location\");\n  // Check if the request resulted in an error and extract \"error\" and \"error_description\" parameters if this is the case. Otherwise check if \"code\", \"access_token\", or \"id_token\" parameters are present and extract them.\n  const regexError = /error=([^&#]*)/;\n  const regexCode = /code=([^&#]*)/;\n  const regexAccesstoken = /access_token=([^&#]*)/;\n  const regexIdtoken = /id_token=([^&#]*)/;\n  var error = null;\n  var code = null;\n  var access_token = null;\n  var id_token = null;\n  if(regexError.test(authRespUrl)) {\n    error = authRespUrl.match(regexError);\n    const regexErrorDescription = /error_description=([^&#]*)/;\n    const error_description = authRespUrl.match(regexErrorDescription);\n    test(\"error: \" +  error[1] + \" | \" + \"error_description: \" + error_description[1], function () {\n      expect(true);\n    }); // The condition was already checked by the if clause.\n  } else {\n    if (regexCode.test(authRespUrl)) {\n      code = authRespUrl.match(regexCode);\n      bru.setEnvVar(\"code\", code[1]);\n      // console.log(\"code: \" + code[1]);\n      test(\"You are successfully logged in. Code extracted. Proceed with the next request.\", function () {\n        expect(true);\n      }); // The condition was already checked by the if clause.\n    }\n    if (regexAccesstoken.test(authRespUrl)) {\n      access_token = authRespUrl.match(regexAccesstoken);\n      bru.setEnvVar(\"access_token\", access_token[1]);\n      // console.log(\"access_token: \" + access_token[1]);\n      test(\"You are successfully logged in. Access Token extracted.\", function(){\n        expect(true);\n      }); // The condition was already checked by the if clause.\n\n    }\n    if (regexIdtoken.test(authRespUrl)) {\n      id_token = authRespUrl.match(regexIdtoken);\n      bru.setEnvVar(\"id_token\", id_token[1]);\n      // console.log(\"id_token: \" + id_token[1]);\n      test(\"You are successfully logged in. ID Token extracted.\", function(){\n        expect(true);\n      }); // The condition was already checked by the if clause.\n\n    }\n  }\n  if (error == null && code == null && access_token == null && id_token == null) {\n    console.log(\"Unknown Error\");\n  }\n} else if(res.getStatus() == 400) { // If valid session cookies exist the IdP returns an error stating that the user is already logged in.\n  const responseText = res.getBody();\n  const regexLoggedIn = /You are already logged in/;\n  if (regexLoggedIn.test(responseText)) {\n    test(\"You are already logged in. Proceed with the next request.\", function(){\n      expect(true);\n    }); // The condition was already checked by the if clause.\n  } else {\n    console.log(\"Unknown Error\");\n  }\n} else {\n  console.log(\"Unknown Response Status Code\");\n}"
+            },
+            "vars": {},
+            "assertions": [],
+            "tests": "",
+            "docs": "",
+            "auth": {
+              "mode": "none"
+            }
+          }
+        },
+        {
+          "type": "http",
+          "name": "3 Token Request",
+          "filename": "3 Token Request.bru",
+          "seq": 3,
+          "request": {
+            "url": "{{baseUrl}}/token",
+            "method": "POST",
+            "headers": [],
+            "params": [],
+            "body": {
+              "mode": "formUrlEncoded",
+              "formUrlEncoded": [
+                {
+                  "name": "grant_type",
+                  "value": "authorization_code",
+                  "enabled": true
+                },
+                {
+                  "name": "redirect_uri",
+                  "value": "{{redirect_uri}}",
+                  "enabled": true
+                },
+                {
+                  "name": "code",
+                  "value": "{{code}}",
+                  "enabled": true
+                },
+                {
+                  "name": "code_verifier",
+                  "value": "{{code_verifier}}",
+                  "enabled": true
+                }
+              ],
+              "multipartForm": [],
+              "file": []
+            },
+            "script": {
+              "res": "// If the request is successful the tokens are extracted from the response.\nif(res.getStatus() == 200) {\n  const jsonResponse = res.getBody();\n  if (jsonResponse.access_token != null) {\n    bru.setEnvVar(\"access_token\", jsonResponse.access_token);\n    test(\"Access Token extracted.\", function(){\n      expect(true);\n    }); // The condition was already checked by the if clause.\n  }\n  if (jsonResponse.refresh_token != null) {\n    bru.setEnvVar(\"refresh_token\", jsonResponse.refresh_token);\n    test(\"Refresh Token extracted.\", function(){\n      expect(true);\n    }); // The condition was already checked by the if clause.\n  }\n  if (jsonResponse.id_token != null) {\n    bru.setEnvVar(\"id_token\", jsonResponse.id_token);\n    test(\"ID Token extracted.\", function(){\n      expect(true);\n    }); // The condition was already checked by the if clause.\n  }\n  if (jsonResponse.access_token == null && jsonResponse.refresh_token == null && jsonResponse.id_token == null) {\n    console.log(\"Unknown Error\");\n  }\n} else if(res.getStatus() == 400) { // If the code is not valid an error is returned.\n  const jsonResponse = res.getBody();\n  const error = jsonResponse.error;\n  const error_description = jsonResponse.error_description;\n  if (error != null && error_description != null) {\n    test(\"error: \" +  error + \" | \" + \"error_description: \" + error_description, function(){\n      expect(true);\n    }); // The condition was already checked by the if clause.\n  } else {\n    console.log(\"Unknown Error\");\n  }\n} else {\n  console.log(\"Unknown Response Status Code\");\n}"
+            },
+            "vars": {},
+            "assertions": [],
+            "tests": "",
+            "docs": "",
+            "auth": {
+              "mode": "basic",
+              "basic": {
+                "username": "{{client_id}}",
+                "password": "{{client_secret}}"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "folder",
+      "name": "Implicit Flow",
+      "filename": "Implicit Flow",
+      "seq": 2,
+      "root": {
+        "meta": {
+          "name": "Implicit Flow",
+          "seq": 2
+        }
+      },
+      "items": [
+        {
+          "type": "http",
+          "name": "1 Auth. Request",
+          "filename": "1 Auth. Request.bru",
+          "seq": 1,
+          "request": {
+            "url": "{{baseUrl}}/auth?client_id={{client_id}}&redirect_uri={{redirect_uri}}&state={{state}}&nonce={{nonce}}&code_challenge={{code_challenge}}&code_challenge_method={{code_challenge_method}}&response_type=id_token&scope=openid+profile",
+            "method": "GET",
+            "headers": [],
+            "params": [
+              {
+                "name": "client_id",
+                "value": "{{client_id}}",
+                "type": "query",
+                "enabled": true
+              },
+              {
+                "name": "redirect_uri",
+                "value": "{{redirect_uri}}",
+                "type": "query",
+                "enabled": true
+              },
+              {
+                "name": "state",
+                "value": "{{state}}",
+                "type": "query",
+                "enabled": true
+              },
+              {
+                "name": "nonce",
+                "value": "{{nonce}}",
+                "type": "query",
+                "enabled": true
+              },
+              {
+                "name": "code_challenge",
+                "value": "{{code_challenge}}",
+                "type": "query",
+                "enabled": true
+              },
+              {
+                "name": "code_challenge_method",
+                "value": "{{code_challenge_method}}",
+                "type": "query",
+                "enabled": true
+              },
+              {
+                "name": "response_type",
+                "value": "id_token",
+                "type": "query",
+                "enabled": true
+              },
+              {
+                "name": "scope",
+                "value": "openid+profile",
+                "type": "query",
+                "enabled": true
+              }
+            ],
+            "body": {
+              "mode": "none",
+              "formUrlEncoded": [],
+              "multipartForm": [],
+              "file": []
+            },
+            "script": {
+              "res": "// If no valid session cookies exist the response to this request will be the login form for the user. We need to extract the URL to send the user's credentials to in the Login Request.\nif(res.getStatus() == 200) {\n  // Load node.js module cheerio\n  const cheerio = require('cheerio');\n  // Parse HTML response\n  const $ = cheerio.load(res.getBody());\n  // Extract important pieces from response\n  const loginUrl = $('#kc-form-login').attr('action');\n  if (loginUrl != null) {\n    // Set variables\n    bru.setEnvVar(\"loginUrl\", loginUrl);\n    // console.log(\"loginUrl: \" + loginUrl);\n    test(\"You need to log in. Proceed with the Login Request.\", function () {\n      expect(true);\n    }); // The condition was already checked by the if clause.\n  } else {\n    console.log(\"Unknown Error\");\n  }\n} else if(res.getStatus() == 302) { // If valid session cookies exist the response to this request will be the auth. response with the tokens. We need to extract the tokens.\n  const authRespUrl = res.getHeader(\"location\");\n  // Check if the request resulted in an error and extract \"error\" and \"error_description\" parameters if this is the case. Otherwise check if \"code\", \"access_token\", or \"id_token\" parameter are present and extract them.\n  const regexError = /error=([^&#]*)/;\n  const regexCode = /code=([^&#]*)/;\n  const regexAccesstoken = /access_token=([^&#]*)/;\n  const regexIdtoken = /id_token=([^&#]*)/;\n  var error = null;\n  var code = null;\n  var access_token = null;\n  var id_token = null;\n  if(regexError.test(authRespUrl)) {\n    error = authRespUrl.match(regexError);\n    const regexErrorDescription = /error_description=([^&#]*)/;\n    const error_description = authRespUrl.match(regexErrorDescription);\n    test(\"error: \" +  error[1] + \" | \" + \"error_description: \" + error_description[1], function () {\n      expect(true);\n    }); // The condition was already checked by the if clause.\n  } else {\n    if (regexCode.test(authRespUrl)) {\n      code = authRespUrl.match(regexCode);\n      bru.setEnvVar(\"code\", code[1]);\n      // console.log(\"code: \" + code[1]);\n      test(\"You are already logged in. Code extracted.\", function () {\n        expect(true);\n      }); // The condition was already checked by the if clause.\n    }\n    if (regexAccesstoken.test(authRespUrl)) {\n      access_token = authRespUrl.match(regexAccesstoken);\n      bru.setEnvVar(\"access_token\", access_token[1]);\n      // console.log(\"access_token: \" + access_token[1]);\n      test(\"You are already logged in. Access Token extracted.\", function () {\n        expect(true);\n      }); // The condition was already checked by the if clause.\n    }\n    if (regexIdtoken.test(authRespUrl)) {\n      id_token = authRespUrl.match(regexIdtoken);\n      bru.setEnvVar(\"id_token\", id_token[1]);\n      // console.log(\"id_token: \" + id_token[1]);\n      test(\"You are already logged in. ID Token extracted.\", function () {\n        expect(true);\n      }); // The condition was already checked by the if clause.\n    }\n  }\n  if (error == null && code == null && access_token == null && id_token == null) {\n    console.log(\"Unknown Error\");\n  }\n} else {\n  console.log(\"Unknown Response Status Code\");\n}"
+            },
+            "vars": {},
+            "assertions": [],
+            "tests": "",
+            "docs": "",
+            "auth": {
+              "mode": "none"
+            }
+          }
+        },
+        {
+          "type": "http",
+          "name": "2 Login Request",
+          "filename": "2 Login Request.bru",
+          "seq": 2,
+          "request": {
+            "url": "{{loginUrl}}",
+            "method": "POST",
+            "headers": [],
+            "params": [],
+            "body": {
+              "mode": "formUrlEncoded",
+              "formUrlEncoded": [
+                {
+                  "name": "username",
+                  "value": "{{username}}",
+                  "enabled": true
+                },
+                {
+                  "name": "password",
+                  "value": "{{password}}",
+                  "enabled": true
+                },
+                {
+                  "name": "credentialId",
+                  "value": "",
+                  "enabled": true
+                }
+              ],
+              "multipartForm": [],
+              "file": []
+            },
+            "script": {
+              "res": "// After successful login the response to this request will be the auth. response with the code and/or tokens. We need to extract the code and/or tokens.\nif(res.getStatus() == 302) {\n  const authRespUrl = res.getHeader(\"location\");\n  // Check if the request resulted in an error and extract \"error\" and \"error_description\" parameters if this is the case. Otherwise check if \"code\", \"access_token\", or \"id_token\" parameters are present and extract them.\n  const regexError = /error=([^&#]*)/;\n  const regexCode = /code=([^&#]*)/;\n  const regexAccesstoken = /access_token=([^&#]*)/;\n  const regexIdtoken = /id_token=([^&#]*)/;\n  var error = null;\n  var code = null;\n  var access_token = null;\n  var id_token = null;\n  if(regexError.test(authRespUrl)) {\n    error = authRespUrl.match(regexError);\n    const regexErrorDescription = /error_description=([^&#]*)/;\n    const error_description = authRespUrl.match(regexErrorDescription);\n    test(\"error: \" +  error[1] + \" | \" + \"error_description: \" + error_description[1], function () {\n      expect(true);\n    }); // The condition was already checked by the if clause.\n  } else {\n    if (regexCode.test(authRespUrl)) {\n      code = authRespUrl.match(regexCode);\n      bru.setEnvVar(\"code\", code[1]);\n      // console.log(\"code: \" + code[1]);\n      test(\"You are successfully logged in. Code extracted. Proceed with the next request.\", function () {\n        expect(true);\n      }); // The condition was already checked by the if clause.\n    }\n    if (regexAccesstoken.test(authRespUrl)) {\n      access_token = authRespUrl.match(regexAccesstoken);\n      bru.setEnvVar(\"access_token\", access_token[1]);\n      // console.log(\"access_token: \" + access_token[1]);\n      test(\"You are successfully logged in. Access Token extracted.\", function(){\n        expect(true);\n      }); // The condition was already checked by the if clause.\n\n    }\n    if (regexIdtoken.test(authRespUrl)) {\n      id_token = authRespUrl.match(regexIdtoken);\n      bru.setEnvVar(\"id_token\", id_token[1]);\n      // console.log(\"id_token: \" + id_token[1]);\n      test(\"You are successfully logged in. ID Token extracted.\", function(){\n        expect(true);\n      }); // The condition was already checked by the if clause.\n\n    }\n  }\n  if (error == null && code == null && access_token == null && id_token == null) {\n    console.log(\"Unknown Error\");\n  }\n} else if(res.getStatus() == 400) { // If valid session cookies exist the IdP returns an error stating that the user is already logged in.\n  const responseText = res.getBody();\n  const regexLoggedIn = /You are already logged in/;\n  if (regexLoggedIn.test(responseText)) {\n    test(\"You are already logged in. Proceed with the next request.\", function(){\n      expect(true);\n    }); // The condition was already checked by the if clause.\n  } else {\n    console.log(\"Unknown Error\");\n  }\n} else {\n  console.log(\"Unknown Response Status Code\");\n}"
+            },
+            "vars": {},
+            "assertions": [],
+            "tests": "",
+            "docs": "",
+            "auth": {
+              "mode": "none"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "folder",
+      "name": "Misc",
+      "filename": "Misc",
+      "seq": 7,
+      "root": {
+        "meta": {
+          "name": "Misc",
+          "seq": 7
+        }
+      },
+      "items": [
+        {
+          "type": "http",
+          "name": "Client Registration Request",
+          "filename": "Client Registration Request.bru",
+          "seq": 7,
+          "request": {
+            "url": "{{baseUrl}}/../../clients-registrations/openid-connect",
+            "method": "POST",
+            "headers": [],
+            "params": [],
+            "body": {
+              "mode": "json",
+              "json": "{\n  \"redirect_uris\": [\n    \"{{redirect_uri}}\"\n  ],\n  \"client_name\": \"My Example Client\",\n  \"token_endpoint_auth_method\": \"client_secret_basic\",\n  \"grant_types\": [\n    \"authorization_code\",\n    \"client_credentials\",\n    \"refresh_token\",\n    \"urn:ietf:params:oauth:grant-type:device_code\"\n  ],\n  \"response_types\": [\n    \"code\"\n  ]\n}",
+              "formUrlEncoded": [],
+              "multipartForm": [],
+              "file": []
+            },
+            "script": {
+              "res": "// If the request is successful the registration access token and client credentials are extracted from the response.\nif(res.getStatus() == 201) {\n  const jsonResponse = res.getBody();\n  if (jsonResponse.registration_access_token != null) {\n    bru.setEnvVar(\"registration_access_token\", jsonResponse.registration_access_token);\n    test(\"registration_access_token extracted.\", function(){\n      expect(true);\n    }); // The condition was already checked by the if clause.\n  }\n  if (jsonResponse.client_id != null) {\n    bru.setEnvVar(\"client_id_registered\", jsonResponse.client_id);\n    test(\"client_id extracted.\", function(){\n      expect(true);\n    }); // The condition was already checked by the if clause.\n  }\n  if (jsonResponse.client_secret != null) {\n    bru.setEnvVar(\"client_secret_registered\", jsonResponse.client_secret);\n    test(\"client_secret extracted.\", function(){\n      expect(true);\n    }); // The condition was already checked by the if clause.\n  }\n  if (jsonResponse.registration_access_token == null && jsonResponse.client_id == null && jsonResponse.client_secret == null) {\n    console.log(\"Unknown Error\");\n  }\n} else if(res.getStatus() == 400) { // If the registration request was not successful an error is returned.\n  const jsonResponse = res.getBody();\n  const error = jsonResponse.error;\n  const error_description = jsonResponse.error_description;\n  if (error != null && error_description != null) {\n    test(\"error: \" +  error + \" | \" + \"error_description: \" + error_description, function(){\n      expect(true);\n    }); // The condition was already checked by the if clause.\n  } else {\n    console.log(\"Unknown Error\");\n  }\n} else {\n  console.log(\"Unknown Response Status Code\");\n}"
+            },
+            "vars": {},
+            "assertions": [],
+            "tests": "",
+            "docs": "",
+            "auth": {
+              "mode": "basic",
+              "basic": {
+                "username": "{{client_id}}",
+                "password": "{{client_secret}}"
+              }
+            }
+          }
+        },
+        {
+          "type": "http",
+          "name": "Introspection Request",
+          "filename": "Introspection Request.bru",
+          "seq": 2,
+          "request": {
+            "url": "{{baseUrl}}/token/introspect",
+            "method": "POST",
+            "headers": [],
+            "params": [],
+            "body": {
+              "mode": "formUrlEncoded",
+              "formUrlEncoded": [
+                {
+                  "name": "token",
+                  "value": "{{access_token}}",
+                  "enabled": true
+                },
+                {
+                  "name": "token_type_hint",
+                  "value": "access_token",
+                  "enabled": true
+                },
+                {
+                  "name": "token",
+                  "value": "{{refresh_token}}",
+                  "enabled": false
+                },
+                {
+                  "name": "token_type_hint",
+                  "value": "refresh_token",
+                  "enabled": false
+                }
+              ],
+              "multipartForm": [],
+              "file": []
+            },
+            "script": {},
+            "vars": {},
+            "assertions": [],
+            "tests": "",
+            "docs": "",
+            "auth": {
+              "mode": "basic",
+              "basic": {
+                "username": "{{client_id}}",
+                "password": "{{client_secret}}"
+              }
+            }
+          }
+        },
+        {
+          "type": "http",
+          "name": "RP-initated Logout (Endsession Endpoint)",
+          "filename": "RP-initated Logout (Endsession Endpoint).bru",
+          "seq": 8,
+          "request": {
+            "url": "{{baseUrl}}/logout?id_token_hint={{id_token}}",
+            "method": "GET",
+            "headers": [],
+            "params": [
+              {
+                "name": "id_token_hint",
+                "value": "{{id_token}}",
+                "type": "query",
+                "enabled": true
+              },
+              {
+                "name": "logout_hint",
+                "value": "",
+                "type": "query",
+                "enabled": false
+              },
+              {
+                "name": "client_id",
+                "value": "{{client_id}}",
+                "type": "query",
+                "enabled": false
+              },
+              {
+                "name": "post_logout_redirect_uri",
+                "value": "{{redirect_uri}}",
+                "type": "query",
+                "enabled": false
+              },
+              {
+                "name": "state",
+                "value": "{{state}}",
+                "type": "query",
+                "enabled": false
+              },
+              {
+                "name": "ui_locales",
+                "value": "en",
+                "type": "query",
+                "enabled": false
+              }
+            ],
+            "body": {
+              "mode": "none",
+              "formUrlEncoded": [],
+              "multipartForm": [],
+              "file": []
+            },
+            "script": {},
+            "vars": {},
+            "assertions": [],
+            "tests": "",
+            "docs": "",
+            "auth": {
+              "mode": "none"
+            }
+          }
+        },
+        {
+          "type": "http",
+          "name": "Refresh Request",
+          "filename": "Refresh Request.bru",
+          "seq": 1,
+          "request": {
+            "url": "{{baseUrl}}/token",
+            "method": "POST",
+            "headers": [],
+            "params": [],
+            "body": {
+              "mode": "formUrlEncoded",
+              "formUrlEncoded": [
+                {
+                  "name": "grant_type",
+                  "value": "refresh_token",
+                  "enabled": true
+                },
+                {
+                  "name": "refresh_token",
+                  "value": "{{refresh_token}}",
+                  "enabled": true
+                },
+                {
+                  "name": "scope",
+                  "value": "openid",
+                  "enabled": true
+                }
+              ],
+              "multipartForm": [],
+              "file": []
+            },
+            "script": {
+              "res": "// If the request is successful the tokens are extracted from the response.\nif(res.getStatus() == 200) {\n  const jsonResponse = res.getBody();\n  if (jsonResponse.access_token != null) {\n    bru.setEnvVar(\"access_token\", jsonResponse.access_token);\n    test(\"Access Token extracted.\", function(){\n      expect(true);\n    }); // The condition was already checked by the if clause.\n  }\n  if (jsonResponse.refresh_token != null) {\n    bru.setEnvVar(\"refresh_token\", jsonResponse.refresh_token);\n    test(\"Refresh Token extracted.\", function(){\n      expect(true);\n    }); // The condition was already checked by the if clause.\n  }\n  if (jsonResponse.id_token != null) {\n    bru.setEnvVar(\"id_token\", jsonResponse.id_token);\n    test(\"ID Token extracted.\", function(){\n      expect(true);\n    }); // The condition was already checked by the if clause.\n  }\n  if (jsonResponse.access_token == null && jsonResponse.refresh_token == null && jsonResponse.id_token == null) {\n    console.log(\"Unknown Error\");\n  }\n} else if(res.getStatus() == 400) { // If the refresh token is not valid an error is returned.\n  const jsonResponse = res.getBody();\n  const error = jsonResponse.error;\n  const error_description = jsonResponse.error_description;\n  if (error != null && error_description != null) {\n    test(\"error: \" +  error + \" | \" + \"error_description: \" + error_description, function(){\n      expect(true);\n    }); // The condition was already checked by the if clause.\n  } else {\n    console.log(\"Unknown Error\");\n  }\n} else {\n  console.log(\"Unknown Response Status Code\");\n}"
+            },
+            "vars": {},
+            "assertions": [],
+            "tests": "",
+            "docs": "",
+            "auth": {
+              "mode": "basic",
+              "basic": {
+                "username": "{{client_id}}",
+                "password": "{{client_secret}}"
+              }
+            }
+          }
+        },
+        {
+          "type": "http",
+          "name": "Resource Owner PW Credentials Grant",
+          "filename": "Resource Owner PW Credentials Grant.bru",
+          "seq": 5,
+          "request": {
+            "url": "{{baseUrl}}/token",
+            "method": "POST",
+            "headers": [],
+            "params": [],
+            "body": {
+              "mode": "formUrlEncoded",
+              "formUrlEncoded": [
+                {
+                  "name": "grant_type",
+                  "value": "password",
+                  "enabled": true
+                },
+                {
+                  "name": "username",
+                  "value": "{{username}}",
+                  "enabled": true
+                },
+                {
+                  "name": "password",
+                  "value": "{{password}}",
+                  "enabled": true
+                },
+                {
+                  "name": "scope",
+                  "value": "openid",
+                  "enabled": true
+                }
+              ],
+              "multipartForm": [],
+              "file": []
+            },
+            "script": {
+              "res": "// If the request is successful the tokens are extracted from the response.\nif(res.getStatus() == 200) {\n  const jsonResponse = res.getBody();\n  if (jsonResponse.access_token != null) {\n    bru.setEnvVar(\"access_token\", jsonResponse.access_token);\n    test(\"Access Token extracted.\", function(){\n      expect(true);\n    }); // The condition was already checked by the if clause.\n  }\n  if (jsonResponse.refresh_token != null) {\n    bru.setEnvVar(\"refresh_token\", jsonResponse.refresh_token);\n    test(\"Refresh Token extracted.\", function(){\n      expect(true);\n    }); // The condition was already checked by the if clause.\n  }\n  if (jsonResponse.id_token != null) {\n    bru.setEnvVar(\"id_token\", jsonResponse.id_token);\n    test(\"ID Token extracted.\", function(){\n      expect(true);\n    }); // The condition was already checked by the if clause.\n  }\n  if (jsonResponse.access_token == null && jsonResponse.refresh_token == null && jsonResponse.id_token == null) {\n    console.log(\"Unknown Error\");\n  }\n} else if(res.getStatus() == 400) { // If the code is not valid an error is returned.\n  const jsonResponse = res.getBody();\n  const error = jsonResponse.error;\n  const error_description = jsonResponse.error_description;\n  if (error != null && error_description != null) {\n    test(\"error: \" +  error + \" | \" + \"error_description: \" + error_description, function(){\n      expect(true);\n    }); // The condition was already checked by the if clause.\n  } else {\n    console.log(\"Unknown Error\");\n  }\n} else {\n  console.log(\"Unknown Response Status Code\");\n}"
+            },
+            "vars": {},
+            "assertions": [],
+            "tests": "",
+            "docs": "",
+            "auth": {
+              "mode": "basic",
+              "basic": {
+                "username": "{{client_id}}",
+                "password": "{{client_secret}}"
+              }
+            }
+          }
+        },
+        {
+          "type": "http",
+          "name": "Revocation Request",
+          "filename": "Revocation Request.bru",
+          "seq": 3,
+          "request": {
+            "url": "{{baseUrl}}/revoke",
+            "method": "POST",
+            "headers": [],
+            "params": [],
+            "body": {
+              "mode": "formUrlEncoded",
+              "formUrlEncoded": [
+                {
+                  "name": "token",
+                  "value": "{{access_token}}",
+                  "enabled": true
+                },
+                {
+                  "name": "token_type_hint",
+                  "value": "access_token",
+                  "enabled": true
+                },
+                {
+                  "name": "token",
+                  "value": "{{refresh_token}}",
+                  "enabled": false
+                },
+                {
+                  "name": "token_type_hint",
+                  "value": "refresh_token",
+                  "enabled": false
+                }
+              ],
+              "multipartForm": [],
+              "file": []
+            },
+            "script": {
+              "res": "// If the request is successful the token will be no longer valid.\nif(res.getStatus() == 200) {\n    test(\"Token revoked or unless it was already invalid.\", function(){\n      expect(true);\n    }); // The condition was already checked by the if clause.\n} else if(res.getStatus() == 400) {\n  const jsonResponse = res.getBody();\n  const error = jsonResponse.error;\n  const error_description = jsonResponse.error_description;\n  if (error != null && error_description != null) {\n    test(\"error: \" +  error + \" | \" + \"error_description: \" + error_description, function(){\n      expect(true);\n    }); // The condition was already checked by the if clause.\n  } else {\n    console.log(\"Unknown Error\");\n  }\n} else {\n  console.log(\"Unknown Response Status Code\");\n}"
+            },
+            "vars": {},
+            "assertions": [],
+            "tests": "",
+            "docs": "",
+            "auth": {
+              "mode": "basic",
+              "basic": {
+                "username": "{{client_id}}",
+                "password": "{{client_secret}}"
+              }
+            }
+          }
+        },
+        {
+          "type": "http",
+          "name": "Token Exchange",
+          "filename": "Token Exchange.bru",
+          "seq": 6,
+          "request": {
+            "url": "{{baseUrl}}/token",
+            "method": "POST",
+            "headers": [],
+            "params": [],
+            "body": {
+              "mode": "formUrlEncoded",
+              "formUrlEncoded": [
+                {
+                  "name": "grant_type",
+                  "value": "urn:ietf:params:oauth:grant-type:token-exchange",
+                  "enabled": true
+                },
+                {
+                  "name": "scope",
+                  "value": "openid",
+                  "enabled": true
+                },
+                {
+                  "name": "subject_token",
+                  "value": "{{access_token}}",
+                  "enabled": true
+                },
+                {
+                  "name": "subject_token_type",
+                  "value": "urn:ietf:params:oauth:token-type:access_token",
+                  "enabled": true
+                },
+                {
+                  "name": "resource",
+                  "value": "",
+                  "enabled": false
+                },
+                {
+                  "name": "audience",
+                  "value": "",
+                  "enabled": false
+                },
+                {
+                  "name": "requested_token_type",
+                  "value": "",
+                  "enabled": false
+                },
+                {
+                  "name": "actor_token",
+                  "value": "",
+                  "enabled": false
+                },
+                {
+                  "name": "actor_token_type",
+                  "value": "",
+                  "enabled": false
+                }
+              ],
+              "multipartForm": [],
+              "file": []
+            },
+            "script": {
+              "res": "// If the request is successful the tokens are extracted from the response.\nif(res.getStatus() == 200) {\n  const jsonResponse = res.getBody();\n  if (jsonResponse.access_token != null) {\n    bru.setEnvVar(\"access_token\", jsonResponse.access_token);\n    test(\"Access Token extracted.\", function(){\n      expect(true);\n    }); // The condition was already checked by the if clause.\n  }\n  if (jsonResponse.refresh_token != null) {\n    bru.setEnvVar(\"refresh_token\", jsonResponse.refresh_token);\n    test(\"Refresh Token extracted.\", function(){\n      expect(true);\n    }); // The condition was already checked by the if clause.\n  }\n  if (jsonResponse.id_token != null) {\n    bru.setEnvVar(\"id_token\", jsonResponse.id_token);\n    test(\"ID Token extracted.\", function(){\n      expect(true);\n    }); // The condition was already checked by the if clause.\n  }\n  if (jsonResponse.access_token == null && jsonResponse.refresh_token == null && jsonResponse.id_token == null) {\n    console.log(\"Unknown Error\");\n  }\n} else if(res.getStatus() == 400) { // If the client credentials are not valid or the client is not authorized for the flow or scope, an error is returned.\n  const jsonResponse = res.getBody();\n  const error = jsonResponse.error;\n  const error_description = jsonResponse.error_description;\n  if (error != null && error_description != null) {\n    test(\"error: \" +  error + \" | \" + \"error_description: \" + error_description, function(){\n      expect(true);\n    }); // The condition was already checked by the if clause.\n  } else {\n    console.log(\"Unknown Error\");\n  }\n} else {\n  console.log(\"Unknown Response Status Code\");\n}"
+            },
+            "vars": {},
+            "assertions": [],
+            "tests": "",
+            "docs": "",
+            "auth": {
+              "mode": "basic",
+              "basic": {
+                "username": "{{client_id}}",
+                "password": "{{client_secret}}"
+              }
+            }
+          }
+        },
+        {
+          "type": "http",
+          "name": "Userinfo Request",
+          "filename": "Userinfo Request.bru",
+          "seq": 4,
+          "request": {
+            "url": "{{baseUrl}}/userinfo",
+            "method": "GET",
+            "headers": [
+              {
+                "name": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "enabled": true
+              }
+            ],
+            "params": [],
+            "body": {
+              "mode": "none",
+              "formUrlEncoded": [],
+              "multipartForm": [],
+              "file": []
+            },
+            "script": {
+              "res": "if(res.getStatus() == 401) {\ntest(\"Unauthorized due to invalid or missing token.\", function(){\n      expect(true);\n    }); // The condition was already checked by the if clause.\n} else if(res.getStatus() == 400) {\n  const jsonResponse = res.getBody();\n  const error = jsonResponse.error;\n  const error_description = jsonResponse.error_description;\n  if (error != null && error_description != null) {\n    test(\"error: \" +  error + \" | \" + \"error_description: \" + error_description, function(){\n      expect(true);\n    }); // The condition was already checked by the if clause.\n  } else {\n    console.log(\"Unknown Error\");\n  }\n} else {\n  console.log(\"Unknown Response Status Code\");\n}"
+            },
+            "vars": {},
+            "assertions": [],
+            "tests": "",
+            "docs": "",
+            "auth": {
+              "mode": "none"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "folder",
+      "name": "PAR",
+      "filename": "PAR",
+      "seq": 6,
+      "root": {
+        "meta": {
+          "name": "PAR",
+          "seq": 6
+        }
+      },
+      "items": [
+        {
+          "type": "http",
+          "name": "1 Pushed Authorization Request",
+          "filename": "1 Pushed Authorization Request.bru",
+          "seq": 1,
+          "request": {
+            "url": "{{baseUrl}}/ext/par/request",
+            "method": "POST",
+            "headers": [],
+            "params": [],
+            "body": {
+              "mode": "formUrlEncoded",
+              "formUrlEncoded": [
+                {
+                  "name": "client_id",
+                  "value": "{{client_id}}",
+                  "enabled": true
+                },
+                {
+                  "name": "redirect_uri",
+                  "value": "{{redirect_uri}}",
+                  "enabled": true
+                },
+                {
+                  "name": "state",
+                  "value": "{{state}}",
+                  "enabled": true
+                },
+                {
+                  "name": "nonce",
+                  "value": "{{nonce}}",
+                  "enabled": true
+                },
+                {
+                  "name": "code_challenge",
+                  "value": "{{code_challenge}}",
+                  "enabled": true
+                },
+                {
+                  "name": "code_challenge_method",
+                  "value": "{{code_challenge_method}}",
+                  "enabled": true
+                },
+                {
+                  "name": "response_type",
+                  "value": "code",
+                  "enabled": true
+                },
+                {
+                  "name": "scope",
+                  "value": "openid profile",
+                  "enabled": true
+                }
+              ],
+              "multipartForm": [],
+              "file": []
+            },
+            "script": {
+              "res": "// If the request is successful the request_uri is extracted from the response.\nif(res.getStatus() == 201) {\n  const jsonResponse = res.getBody();\n  if (jsonResponse.request_uri != null) {\n    bru.setEnvVar(\"request_uri\", jsonResponse.request_uri);\n    test(\"request_uri extracted.\", function(){\n      expect(true);\n    }); // The condition was already checked by the if clause.\n  } else {\n    console.log(\"Unknown Error\");\n  }\n} else if(res.getStatus() == 400) { // If the request is not valid an error is returned.\n  const jsonResponse = res.getBody();\n  const error = jsonResponse.error;\n  const error_description = jsonResponse.error_description;\n  if (error != null && error_description != null) {\n    test(\"error: \" +  error + \" | \" + \"error_description: \" + error_description, function(){\n      expect(true);\n    }); // The condition was already checked by the if clause.\n  } else {\n    console.log(\"Unknown Error\");\n  }\n} else {\n  console.log(\"Unknown Response Status Code\");\n}"
+            },
+            "vars": {},
+            "assertions": [],
+            "tests": "",
+            "docs": "",
+            "auth": {
+              "mode": "basic",
+              "basic": {
+                "username": "{{client_id}}",
+                "password": "{{client_secret}}"
+              }
+            }
+          }
+        },
+        {
+          "type": "http",
+          "name": "2 Auth. Request",
+          "filename": "2 Auth. Request.bru",
+          "seq": 2,
+          "request": {
+            "url": "{{baseUrl}}/auth?client_id={{client_id}}&request_uri={{request_uri}}",
+            "method": "GET",
+            "headers": [],
+            "params": [
+              {
+                "name": "client_id",
+                "value": "{{client_id}}",
+                "type": "query",
+                "enabled": true
+              },
+              {
+                "name": "request_uri",
+                "value": "{{request_uri}}",
+                "type": "query",
+                "enabled": true
+              }
+            ],
+            "body": {
+              "mode": "none",
+              "formUrlEncoded": [],
+              "multipartForm": [],
+              "file": []
+            },
+            "script": {
+              "res": "// If no valid session cookies exist the response to this request will be the login form for the user. We need to extract the URL to send the user's credentials to in the Login Request.\nif(res.getStatus() == 200) {\n  // Load node.js module cheerio\n  const cheerio = require('cheerio');\n  // Parse HTML response\n  const $ = cheerio.load(res.getBody());\n  // Extract important pieces from response\n  const loginUrl = $('#kc-form-login').attr('action');\n  if (loginUrl != null) {\n    // Set variables\n    bru.setEnvVar(\"loginUrl\", loginUrl);\n    // console.log(\"loginUrl: \" + loginUrl);\n    test(\"You need to log in. Proceed with the Login Request.\", function () {\n      expect(true);\n    }); // The condition was already checked by the if clause.\n  } else {\n    console.log(\"Unknown Error\");\n  }\n} else if(res.getStatus() == 302) { // If valid session cookies exist the response to this request will be the auth. response with the tokens. We need to extract the tokens.\n  const authRespUrl = res.getHeader(\"location\");\n  // Check if the request resulted in an error and extract \"error\" and \"error_description\" parameters if this is the case. Otherwise check if \"code\", \"access_token\", or \"id_token\" parameter are present and extract them.\n  const regexError = /error=([^&#]*)/;\n  const regexCode = /code=([^&#]*)/;\n  const regexAccesstoken = /access_token=([^&#]*)/;\n  const regexIdtoken = /id_token=([^&#]*)/;\n  var error = null;\n  var code = null;\n  var access_token = null;\n  var id_token = null;\n  if(regexError.test(authRespUrl)) {\n    error = authRespUrl.match(regexError);\n    const regexErrorDescription = /error_description=([^&#]*)/;\n    const error_description = authRespUrl.match(regexErrorDescription);\n    test(\"error: \" +  error[1] + \" | \" + \"error_description: \" + error_description[1], function () {\n      expect(true);\n    }); // The condition was already checked by the if clause.\n  } else {\n    if (regexCode.test(authRespUrl)) {\n      code = authRespUrl.match(regexCode);\n      bru.setEnvVar(\"code\", code[1]);\n      // console.log(\"code: \" + code[1]);\n      test(\"You are already logged in. Code extracted.\", function () {\n        expect(true);\n      }); // The condition was already checked by the if clause.\n    }\n    if (regexAccesstoken.test(authRespUrl)) {\n      access_token = authRespUrl.match(regexAccesstoken);\n      bru.setEnvVar(\"access_token\", access_token[1]);\n      // console.log(\"access_token: \" + access_token[1]);\n      test(\"You are already logged in. Access Token extracted.\", function () {\n        expect(true);\n      }); // The condition was already checked by the if clause.\n    }\n    if (regexIdtoken.test(authRespUrl)) {\n      id_token = authRespUrl.match(regexIdtoken);\n      bru.setEnvVar(\"id_token\", id_token[1]);\n      // console.log(\"id_token: \" + id_token[1]);\n      test(\"You are already logged in. ID Token extracted.\", function () {\n        expect(true);\n      }); // The condition was already checked by the if clause.\n    }\n  }\n  if (error == null && code == null && access_token == null && id_token == null) {\n    console.log(\"Unknown Error\");\n  }\n} else {\n  console.log(\"Unknown Response Status Code\");\n}"
+            },
+            "vars": {},
+            "assertions": [],
+            "tests": "",
+            "docs": "",
+            "auth": {
+              "mode": "none"
+            }
+          }
+        },
+        {
+          "type": "http",
+          "name": "3 Login Request",
+          "filename": "3 Login Request.bru",
+          "seq": 3,
+          "request": {
+            "url": "{{loginUrl}}",
+            "method": "POST",
+            "headers": [],
+            "params": [],
+            "body": {
+              "mode": "formUrlEncoded",
+              "formUrlEncoded": [
+                {
+                  "name": "username",
+                  "value": "{{username}}",
+                  "enabled": true
+                },
+                {
+                  "name": "password",
+                  "value": "{{password}}",
+                  "enabled": true
+                },
+                {
+                  "name": "credentialId",
+                  "value": "",
+                  "enabled": true
+                }
+              ],
+              "multipartForm": [],
+              "file": []
+            },
+            "script": {
+              "res": "// After successful login the response to this request will be the auth. response with the code and/or tokens. We need to extract the code and/or tokens.\nif(res.getStatus() == 302) {\n  const authRespUrl = res.getHeader(\"location\");\n  // Check if the request resulted in an error and extract \"error\" and \"error_description\" parameters if this is the case. Otherwise check if \"code\", \"access_token\", or \"id_token\" parameters are present and extract them.\n  const regexError = /error=([^&#]*)/;\n  const regexCode = /code=([^&#]*)/;\n  const regexAccesstoken = /access_token=([^&#]*)/;\n  const regexIdtoken = /id_token=([^&#]*)/;\n  var error = null;\n  var code = null;\n  var access_token = null;\n  var id_token = null;\n  if(regexError.test(authRespUrl)) {\n    error = authRespUrl.match(regexError);\n    const regexErrorDescription = /error_description=([^&#]*)/;\n    const error_description = authRespUrl.match(regexErrorDescription);\n    test(\"error: \" +  error[1] + \" | \" + \"error_description: \" + error_description[1], function () {\n      expect(true);\n    }); // The condition was already checked by the if clause.\n  } else {\n    if (regexCode.test(authRespUrl)) {\n      code = authRespUrl.match(regexCode);\n      bru.setEnvVar(\"code\", code[1]);\n      // console.log(\"code: \" + code[1]);\n      test(\"You are successfully logged in. Code extracted. Proceed with the next request.\", function () {\n        expect(true);\n      }); // The condition was already checked by the if clause.\n    }\n    if (regexAccesstoken.test(authRespUrl)) {\n      access_token = authRespUrl.match(regexAccesstoken);\n      bru.setEnvVar(\"access_token\", access_token[1]);\n      // console.log(\"access_token: \" + access_token[1]);\n      test(\"You are successfully logged in. Access Token extracted.\", function(){\n        expect(true);\n      }); // The condition was already checked by the if clause.\n\n    }\n    if (regexIdtoken.test(authRespUrl)) {\n      id_token = authRespUrl.match(regexIdtoken);\n      bru.setEnvVar(\"id_token\", id_token[1]);\n      // console.log(\"id_token: \" + id_token[1]);\n      test(\"You are successfully logged in. ID Token extracted.\", function(){\n        expect(true);\n      }); // The condition was already checked by the if clause.\n\n    }\n  }\n  if (error == null && code == null && access_token == null && id_token == null) {\n    console.log(\"Unknown Error\");\n  }\n} else if(res.getStatus() == 400) { // If valid session cookies exist the IdP returns an error stating that the user is already logged in.\n  const responseText = res.getBody();\n  const regexLoggedIn = /You are already logged in/;\n  if (regexLoggedIn.test(responseText)) {\n    test(\"You are already logged in. Proceed with the next request.\", function(){\n      expect(true);\n    }); // The condition was already checked by the if clause.\n  } else {\n    console.log(\"Unknown Error\");\n  }\n} else {\n  console.log(\"Unknown Response Status Code\");\n}"
+            },
+            "vars": {},
+            "assertions": [],
+            "tests": "",
+            "docs": "",
+            "auth": {
+              "mode": "none"
+            }
+          }
+        },
+        {
+          "type": "http",
+          "name": "4 Token Request",
+          "filename": "4 Token Request.bru",
+          "seq": 4,
+          "request": {
+            "url": "{{baseUrl}}/token",
+            "method": "POST",
+            "headers": [],
+            "params": [],
+            "body": {
+              "mode": "formUrlEncoded",
+              "formUrlEncoded": [
+                {
+                  "name": "grant_type",
+                  "value": "authorization_code",
+                  "enabled": true
+                },
+                {
+                  "name": "redirect_uri",
+                  "value": "{{redirect_uri}}",
+                  "enabled": true
+                },
+                {
+                  "name": "code",
+                  "value": "{{code}}",
+                  "enabled": true
+                },
+                {
+                  "name": "code_verifier",
+                  "value": "{{code_verifier}}",
+                  "enabled": true
+                }
+              ],
+              "multipartForm": [],
+              "file": []
+            },
+            "script": {
+              "res": "// If the request is successful the tokens are extracted from the response.\nif(res.getStatus() == 200) {\n  const jsonResponse = res.getBody();\n  if (jsonResponse.access_token != null) {\n    bru.setEnvVar(\"access_token\", jsonResponse.access_token);\n    test(\"Access Token extracted.\", function(){\n      expect(true);\n    }); // The condition was already checked by the if clause.\n  }\n  if (jsonResponse.refresh_token != null) {\n    bru.setEnvVar(\"refresh_token\", jsonResponse.refresh_token);\n    test(\"Refresh Token extracted.\", function(){\n      expect(true);\n    }); // The condition was already checked by the if clause.\n  }\n  if (jsonResponse.id_token != null) {\n    bru.setEnvVar(\"id_token\", jsonResponse.id_token);\n    test(\"ID Token extracted.\", function(){\n      expect(true);\n    }); // The condition was already checked by the if clause.\n  }\n  if (jsonResponse.access_token == null && jsonResponse.refresh_token == null && jsonResponse.id_token == null) {\n    console.log(\"Unknown Error\");\n  }\n} else if(res.getStatus() == 400) { // If the code is not valid an error is returned.\n  const jsonResponse = res.getBody();\n  const error = jsonResponse.error;\n  const error_description = jsonResponse.error_description;\n  if (error != null && error_description != null) {\n    test(\"error: \" +  error + \" | \" + \"error_description: \" + error_description, function(){\n      expect(true);\n    }); // The condition was already checked by the if clause.\n  } else {\n    console.log(\"Unknown Error\");\n  }\n} else {\n  console.log(\"Unknown Response Status Code\");\n}"
+            },
+            "vars": {},
+            "assertions": [],
+            "tests": "",
+            "docs": "",
+            "auth": {
+              "mode": "basic",
+              "basic": {
+                "username": "{{client_id}}",
+                "password": "{{client_secret}}"
+              }
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "activeEnvironmentUid": "tVANFa3EAWyzimj9vSWEe",
+  "environments": [
+    {
+      "variables": [
+        {
+          "name": "baseUrl",
+          "value": "https://idp.example:8443/realms/{{realm}}/protocol/openid-connect",
+          "enabled": true,
+          "secret": false,
+          "type": "text"
+        },
+        {
+          "name": "redirect_uri",
+          "value": "https://client.example/callback",
+          "enabled": true,
+          "secret": false,
+          "type": "text"
+        },
+        {
+          "name": "nonce",
+          "value": "1707387181989-gdE",
+          "enabled": true,
+          "secret": false,
+          "type": "text"
+        },
+        {
+          "name": "state",
+          "value": "1705659413296-BHK",
+          "enabled": true,
+          "secret": false,
+          "type": "text"
+        },
+        {
+          "name": "code_challenge",
+          "value": "nwUofpx9MV6HWzwqutyOZAYd4xPcYaFs6w3uhiqGKxo",
+          "enabled": true,
+          "secret": false,
+          "type": "text"
+        },
+        {
+          "name": "code_challenge_method",
+          "value": "S256",
+          "enabled": true,
+          "secret": false,
+          "type": "text"
+        },
+        {
+          "name": "code_verifier",
+          "value": "5Q3ndANwNM6femeqyIHMpjHvgabeSHQqwhjugheEMPwrrmVsZg4GcdQ5dK5PsL7g",
+          "enabled": true,
+          "secret": false,
+          "type": "text"
+        },
+        {
+          "name": "username",
+          "value": "localuser",
+          "enabled": true,
+          "secret": false,
+          "type": "text"
+        },
+        {
+          "name": "password",
+          "value": "password",
+          "enabled": true,
+          "secret": false,
+          "type": "text"
+        },
+        {
+          "name": "client_id",
+          "value": "task-1-secure-flows",
+          "enabled": true,
+          "secret": false,
+          "type": "text"
+        },
+        {
+          "name": "client_secret",
+          "value": "PASTE_CLIENT_SECRET_FROM_KEYCLOAK_CONFIGURATION_HERE",
+          "enabled": true,
+          "secret": false,
+          "type": "text"
+        },
+        {
+          "name": "realm",
+          "value": "Task-1",
+          "enabled": true,
+          "secret": false,
+          "type": "text"
+        },
+        {
+          "name": "loginUrl",
+          "value": "https://idp.example:8443/realms/Task-1/login-actions/authenticate?session_code=WR_lJygsCzIbPT_Uj6lQY6kcqd45795tzaYMZbApFBw&execution=cfa4eb7e-b56e-4d19-b176-a0e9a6c06f2d&client_id=task-1-secure-flows&tab_id=xR6a_rxxHkY&client_data=eyJydSI6Imh0dHBzOi8vY2xpZW50LmV4YW1wbGUvY2FsbGJhY2siLCJydCI6ImNvZGUiLCJzdCI6IjE3MDU2NTk0MTMyOTYtQkhLIn0",
+          "enabled": true,
+          "secret": false,
+          "type": "text"
+        },
+        {
+          "name": "code",
+          "value": "3902a8fe-e6fa-40ed-91f5-a1eecca75b2d.11342ec7-652a-4acb-882d-0f305367d602.cdd3e43c-41d6-4fc0-afeb-b622b08fde85",
+          "enabled": true,
+          "secret": false,
+          "type": "text"
+        }
+      ],
+      "name": "Task-1"
+    }
+  ],
+  "root": {
+    "request": {
+      "auth": {
+        "mode": "none"
+      },
+      "script": {
+        "req": "req.setMaxRedirects(0); // Disables following redirects for the whole collection."
+      },
+      "vars": {
+        "req": [
+          {
+            "uid": "JszJsrKpttFJXwXP6CSJs",
+            "name": "",
+            "value": "",
+            "enabled": true
+          }
+        ]
+      }
+    },
+    "meta": {
+      "name": "OAuth / OIDC Flows"
+    }
+  },
+  "brunoConfig": {
+    "version": "1",
+    "name": "OAuth / OIDC Flows",
+    "type": "collection",
+    "ignore": [
+      "node_modules",
+      ".git"
+    ],
+    "scripts": {
+      "moduleWhitelist": [
+        "cheerio",
+        "jsonwebtoken",
+        "uuid"
+      ],
+      "filesystemAccess": {
+        "allow": true
+      }
+    }
+  }
+}

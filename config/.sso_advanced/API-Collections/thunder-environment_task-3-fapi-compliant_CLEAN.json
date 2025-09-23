@@ -1,0 +1,48 @@
+{
+    "client": "Thunder Client",
+    "environmentName": "task-3-fapi-compliant",
+    "dateExported": "2024-03-05T10:56:44.979Z",
+    "version": "1.0",
+    "variables": [
+        {
+            "name": "realm",
+            "value": "Task-3"
+        },
+        {
+            "name": "client_id",
+            "value": "task-3-fapi-compliant"
+        },
+        {
+            "name": "client_secret",
+            "value": "398qWyPcjASp6PDr2LHeWHYw4uY2oF1I"
+        },
+        {
+            "name": "client_private_key",
+            "value": "-----BEGIN PRIVATE KEY-----\\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDtBa+/F05momQS\\nevOOzhvVAVHNAWnxejbmEQtMyhVbjt3N8RjzKDwlciHwgLX9LpIgY1AtgtCkimEi\\neRfKgFU4EQjfbNkvxandGnQd/MkkjXL/Vh3JqwZIPS02NQr4P2x1YvJDbBzePG5I\\nawsfkeQBcLsuEdIWkTyx3rs6bd/cvK03ZA0fCfTe3av4jEQpftqZLUpxVGfMdX4o\\nRIOCpfaLAk3j+hBbJxRmNuQPPfALOx5bu8CQqKblxZMrDWgM79IFwZFNOgIxkSQx\\n9CQgMW1Egkgn3t3PcCo/USg5tT3X8VD6cwZEykXUvapemH6xtSDnWCHzOeOOyj8w\\nQObP4lSBAgMBAAECggEAAiSnvSKCOKGr1ipRIem3gQWYgFoko7CuTtZRLe8a+kVu\\neFF3f2GeCVxEzfuCdcMUQn1mZvpyjbXT/PVniYLffmTCSd+mfzjuPT3rNk8UECfk\\npgYYuetRUMF3m2iXcEUly1IPMOyRHmHxUPehkaYKd9g9s4v5BG/o0q6J/qxKGqFA\\nSjrpRSVZiz16YM+vrhGJZ2ja8xUS9JPc/sllv0/ZhbV5r8yGienwPUHEo5DljxAz\\ndbVg3i7ki+sFQGQNYKJ4KOPgn/3yOK6W6x6TXMWr6u7fFflW4Cg4iZvAFFaU9hvK\\nid2RK4tQdbJu4sdxT/2heUpwH5uFH5lnrBVaaZMCIQKBgQD/F10w9kY/M/5vYDJI\\nrvYYrso86nYNs7gpjXwcQ2stVl6U8Mrv2hzX271F/odV0Q0b3jxtPNxkhpxz9XdG\\nSm2aoI8ofUgok7T3WlNiLp7R67ciG2KbO/IEs4jcLQzWnmnY6kAOOJEHjJsrdJb2\\nlzm2qX0YiI4TX8d4MrSOufwhoQKBgQDt3dgRqXZCYRy37Wn7zPPS/T4OZ394qZ5e\\n3ggz9vMJp/v9aUxUfd0l3v7Fral+eaAWiUkFyK0R0CPS/Hw+mJOO5TN7nsK14X7f\\nvBO7MSEgAaJiT9sHAJW6YEFyGDmgxhpyeV9NDK0EcWjxfb4nfGUZ81+2COICpiY7\\ng4LQnh8G4QKBgBSOLGtCnRyAsxMEfGjQ+HG6u/82oXavMbrfdM3OPPe1Sv/Te3bi\\na4qVYWYfgYZPxy+ks9fVnKjZFAhgElFus/BO2dpYZhUm+eEovSlfOlsOFH7CGCsM\\nJI9ubCvZ0XwF3d+l2K2Mr1sdYG+bAIM0YmkutS7h6hjzkd5Er7oEkKWhAoGBAN5D\\na0ClroE8KQ+cYmoNCtBeHfxrrWrcY8WVhui3mkWtmAMkv1Q7/8cBZeLk8PnjQDmO\\nspMa/s0kRjVCA/6hp0/gz4h1ws8dE+aP4YgK0j8MB+YBZFJYs4/hnYW1KTQXqGLL\\nEsf2Tj1Wk48DxgkzbW0gQpDgIAAFrLfznOq+tZNBAoGAV+M3nFWA74UYiNse+jOa\\n+reWyrDMMyFQFgGzX5UdHWjpHQMehJsnwSDwsLBNqrtD+VQ15ZEzwjPA28L+gZC6\\nsHbJOfDxMLdz/d8AjN/ALxSRbZAWyPtiAnZn9dLtU4wxSIzV6ad0Y95KJha5nEMu\\npbhcySmGEmaiUcrgcAw6GfQ=\\n-----END PRIVATE KEY-----"
+        },
+        {
+            "name": "private_key_jwt",
+            "value": ""
+        },
+        {
+            "name": "loginUrl",
+            "value": ""
+        },
+        {
+            "name": "code",
+            "value": ""
+        },
+        {
+            "name": "access_token",
+            "value": ""
+        },
+        {
+            "name": "refresh_token",
+            "value": ""
+        },
+        {
+            "name": "id_token",
+            "value": ""
+        }
+    ]
+}

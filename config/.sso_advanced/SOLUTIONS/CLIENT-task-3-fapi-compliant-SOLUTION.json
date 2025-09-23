@@ -1,0 +1,64 @@
+{
+  "clientId": "task-3-fapi-compliant",
+  "name": "",
+  "description": "Client that - in its default configuration - is **not** compliant to the FAPI 1.0 Baseline profile. However, after completing Task-3 this client should be compliant to the FAPI 1.0 Baseline profile.",
+  "rootUrl": "",
+  "adminUrl": "",
+  "baseUrl": "",
+  "surrogateAuthRequired": false,
+  "enabled": true,
+  "alwaysDisplayInConsole": false,
+  "clientAuthenticatorType": "client-jwt",
+  "secret": "398qWyPcjASp6PDr2LHeWHYw4uY2oF1I",
+  "redirectUris": [
+    "https://client.example/callback"
+  ],
+  "webOrigins": [
+    "https://client.example"
+  ],
+  "notBefore": 0,
+  "bearerOnly": false,
+  "consentRequired": false,
+  "standardFlowEnabled": true,
+  "implicitFlowEnabled": false,
+  "directAccessGrantsEnabled": false,
+  "serviceAccountsEnabled": false,
+  "publicClient": false,
+  "frontchannelLogout": true,
+  "protocol": "openid-connect",
+  "attributes": {
+    "oidc.ciba.grant.enabled": "false",
+    "client.secret.creation.time": "1709289020",
+    "backchannel.logout.session.required": "true",
+    "jwt.credential.public.key": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA7QWvvxdOZqJkEnrzjs4b\n1QFRzQFp8Xo25hELTMoVW47dzfEY8yg8JXIh8IC1/S6SIGNQLYLQpIphInkXyoBV\nOBEI32zZL8Wp3Rp0HfzJJI1y/1YdyasGSD0tNjUK+D9sdWLyQ2wc3jxuSGsLH5Hk\nAXC7LhHSFpE8sd67Om3f3LytN2QNHwn03t2r+IxEKX7amS1KcVRnzHV+KESDgqX2\niwJN4/oQWycUZjbkDz3wCzseW7vAkKim5cWTKw1oDO/SBcGRTToCMZEkMfQkIDFt\nRIJIJ97dz3AqP1EoObU91/FQ+nMGRMpF1L2qXph+sbUg51gh8znjjso/MEDmz+JU\ngQIDAQAB\n-----END PUBLIC KEY-----\n",
+    "display.on.consent.screen": "false",
+    "oauth2.device.authorization.grant.enabled": "false",
+    "backchannel.logout.revoke.offline.tokens": "false",
+    "login_theme": "",
+    "frontchannel.logout.url": "",
+    "backchannel.logout.url": ""
+  },
+  "authenticationFlowBindingOverrides": {},
+  "fullScopeAllowed": true,
+  "nodeReRegistrationTimeout": -1,
+  "defaultClientScopes": [
+    "web-origins",
+    "acr",
+    "roles",
+    "profile",
+    "email"
+  ],
+  "optionalClientScopes": [
+    "address",
+    "phone",
+    "offline_access",
+    "open-banking",
+    "microprofile-jwt"
+  ],
+  "access": {
+    "view": true,
+    "configure": true,
+    "manage": true
+  },
+  "authorizationServicesEnabled": false
+}

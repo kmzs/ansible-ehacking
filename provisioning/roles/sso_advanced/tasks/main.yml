@@ -1,0 +1,190 @@
+---
+- name: Root password
+  ansible.builtin.user:
+    name: root
+    update_password: always
+    password: "{{ root_user_pw_hash }}" # defined in packer variables
+
+- name: Copy configuration .sso_advanced to {{ vm_user }} home directory
+  ansible.builtin.copy:
+    src: '{{ config_dir }}/.sso_advanced'
+    remote_src: true
+    dest: '{{ vm_user_details.home }}/'
+    owner: "{{ vm_user }}"
+    group: "{{ vm_user_details.group }}"
+    mode: '0755'
+  tags:
+    - sso_advanced
+
+- name: Create directories for Keycloak
+  ansible.builtin.file:
+    path: '{{ item }}'
+    state: directory
+    owner: "{{ vm_user }}"
+    group: "{{ vm_user_details.group }}"
+    mode: '0755'
+  loop:
+    - "{{ vm_user_details.home }}/keycloak"
+    - "{{ vm_user_details.home }}/keycloak_data/providers"
+  tags:
+    - keycloak
+    - sso_advanced
+
+- name: Copy TLS certs to {{ vm_user_details.home }}/keycloak/
+  ansible.builtin.copy:
+    src: '{{ vm_user_details.home }}/.sso_advanced/tls/{{ item }}'
+    remote_src: true
+    dest: '{{ vm_user_details.home }}/keycloak/'
+    owner: "{{ vm_user }}"
+    group: "{{ vm_user_details.group }}"
+    mode: '0755'
+  loop:
+    - idp.example.crt
+    - idp.example.key
+  tags:
+    - keycloak
+    - sso_advanced
+
+- name: Copy realms to {{ vm_user_details.home }}/keycloak/
+  ansible.builtin.copy:
+    src: '{{ vm_user_details.home }}/.sso_advanced/realms'
+    remote_src: true
+    dest: '{{ vm_user_details.home }}/keycloak/'
+    owner: "{{ vm_user }}"
+    group: "{{ vm_user_details.group }}"
+    mode: '0755'
+  tags:
+    - keycloak
+    - sso_advanced
+
+- name: Create directory for postgresql
+  ansible.builtin.file:
+    path: '/var/lib/postgresql/data'
+    state: directory
+    owner: "{{ vm_user }}"
+    group: "{{ vm_user_details.group }}"
+    mode: '0755'
+  tags:
+    - keycloak
+    - sso_advanced
+
+- name: Copy start_keycloak.sh to /etc/profile.d/ and {{ vm_user_details.home }}
+  ansible.builtin.copy:
+    src: '{{ config_dir }}/.sso_advanced/start_keycloak.sh'
+    dest: '{{ item }}'
+    remote_src: yes
+    owner: "{{ vm_user }}"
+    group: "{{ vm_user_details.group }}"
+    mode: '0777'
+  loop:
+    - /etc/profile.d/
+    - "{{ vm_user_details.home }}/"
+  tags:
+    - keycloak
+    - sso_advanced
+
+- name: Copy 1_BUILD_EXECUTOR.sh to /etc/profile.d # the first building process downloads some stuff
+  ansible.builtin.copy:
+    src: '{{ config_dir }}/.sso_advanced/Task-2/1_BUILD_EXECUTOR.sh'
+    dest: '/etc/profile.d/'
+    remote_src: yes
+    owner: "{{ vm_user }}"
+    group: "{{ vm_user_details.group }}"
+    mode: '0777'
+  tags:
+    - keycloak
+    - sso_advanced
+
+# TODO: Change to Bruno!
+- name: Copy Thunder Client environments to {{ vm_user_details.home }}/Desktop/
+  ansible.builtin.copy:
+    src: '{{ vm_user_details.home }}/.sso_advanced/Thunder_Client'
+    remote_src: true
+    dest: '{{ vm_user_details.home }}/Desktop'
+    owner: "{{ vm_user }}"
+    group: "{{ vm_user_details.group }}"
+    mode: '0755'
+  tags:
+    - vscode
+    - thunderclient
+    - sso_advanced
+
+- name: Pull Docker image (without ansible-community-docker extension)
+  ansible.builtin.command: |
+    {{ docker_compose }} -f {{ vm_user_details.home }}/.sso_advanced/docker-compose.yml pull --quiet
+  tags:
+    - docker
+    - sso_advanced
+
+- name: Add mappings to /etc/hosts (sso_advanced)
+  ansible.builtin.blockinfile:
+    path: /etc/hosts
+    block: |
+      {{ item.ip }} {{ item.name }}
+    marker: "# {mark} ANSIBLE MANAGED BLOCK {{ item.name }}"
+  loop:
+    - { name: client.example, ip: 127.0.0.1 }
+    - { name: idp.example, ip: 127.0.0.1 }
+    - { name: keycloak.example, ip: 127.0.0.1 }
+  tags:
+    - keycloak
+    - sso_advanced
+
+##! --------------------------------Task 2--------------------------------
+
+- name: install jdk and maven
+  apt:
+    pkg:
+      - maven
+      - openjdk-17-jdk  # already installed above
+    state: latest
+  tags:
+    - sso_advanced
+    - task2
+    - java
+
+- name: Copy Task-2 to {{ vm_user_details.home }}/Desktop
+  ansible.builtin.copy:
+    src: "{{ config_dir }}/.sso_advanced/Task-2"
+    dest: "{{ vm_user_details.home }}/Desktop/"
+    remote_src: yes
+    owner: "{{ vm_user }}"
+    group: "{{ vm_user_details.group }}"
+    mode: '0755'
+  tags:
+    - sso_advanced
+    - task2
+
+- name: VScode - Install Plugins (Java)
+  become: true
+  become_user: "{{ vm_user }}"
+  ansible.builtin.command: |
+    code --install-extension vscjava.vscode-java-pack
+  tags:
+    - sso_advanced
+    - java
+    - vscode
+
+##! --------------------------------Task 3--------------------------------
+- name: Copy Public-Key.PEM to {{ vm_user_details.home }}/Desktop
+  ansible.builtin.copy:
+    src: "{{ vm_user_details.home }}/.sso_advanced/Task-3/fapi-compliant-public-key.PEM"
+    remote_src: true
+    dest: "{{ vm_user_details.home }}/Desktop/"
+    owner: "{{ vm_user }}"
+    group: "{{ vm_user_details.group }}"
+    mode: '0644'
+  tags:
+    - sso_advanced
+    - task3
+
+# - name: Unconditionally reboot the machine with all defaults
+#   ansible.builtin.reboot:
+
+# - name: Shutdown
+#   ansible.builtin.shutdown:
+#   reboot: no
+#   tags: shutdown
+
+# TODO for sso advanced:
+# - [ ] Replace docker-compose.yml and start_keycloak.sh with templates that work with {{ vm_user }} instead of simply hardcoded "user"

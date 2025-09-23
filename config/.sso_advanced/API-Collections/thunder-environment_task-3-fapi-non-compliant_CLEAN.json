@@ -1,0 +1,40 @@
+{
+    "client": "Thunder Client",
+    "environmentName": "task-3-fapi-non-compliant",
+    "dateExported": "2024-03-05T10:56:40.501Z",
+    "version": "1.0",
+    "variables": [
+        {
+            "name": "realm",
+            "value": "Task-3"
+        },
+        {
+            "name": "client_id",
+            "value": "task-3-fapi-not-compliant"
+        },
+        {
+            "name": "client_secret",
+            "value": "398qWyPcjASp6PDr2LHeWHYw4uY2oF1I"
+        },
+        {
+            "name": "loginUrl",
+            "value": ""
+        },
+        {
+            "name": "code",
+            "value": ""
+        },
+        {
+            "name": "access_token",
+            "value": ""
+        },
+        {
+            "name": "refresh_token",
+            "value": ""
+        },
+        {
+            "name": "id_token",
+            "value": ""
+        }
+    ]
+}

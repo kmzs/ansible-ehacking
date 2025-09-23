@@ -1,0 +1,45 @@
+{
+    "client": "Thunder Client",
+    "environmentName": "(Global Env)",
+    "dateExported": "2024-03-05T08:38:23.906Z",
+    "version": "1.0",
+    "global": true,
+    "variables": [
+        {
+            "name": "baseUrl",
+            "value": "https://idp.example:8443/realms/{{realm}}/protocol/openid-connect"
+        },
+        {
+            "name": "redirect_uri",
+            "value": "https://client.example/callback"
+        },
+        {
+            "name": "nonce",
+            "value": "1707387181989-gdE"
+        },
+        {
+            "name": "state",
+            "value": "1705659413296-BHK"
+        },
+        {
+            "name": "code_challenge",
+            "value": "nwUofpx9MV6HWzwqutyOZAYd4xPcYaFs6w3uhiqGKxo"
+        },
+        {
+            "name": "code_challenge_method",
+            "value": "S256"
+        },
+        {
+            "name": "code_verifier",
+            "value": "5Q3ndANwNM6femeqyIHMpjHvgabeSHQqwhjugheEMPwrrmVsZg4GcdQ5dK5PsL7g"
+        },
+        {
+            "name": "username",
+            "value": "localuser"
+        },
+        {
+            "name": "password",
+            "value": "password"
+        }
+    ]
+}

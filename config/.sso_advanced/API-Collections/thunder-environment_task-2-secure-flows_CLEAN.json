@@ -1,0 +1,40 @@
+{
+    "client": "Thunder Client",
+    "environmentName": "task-2-secure-flows",
+    "dateExported": "2024-03-05T10:56:48.622Z",
+    "version": "1.0",
+    "variables": [
+        {
+            "name": "realm",
+            "value": "Task-2"
+        },
+        {
+            "name": "client_id",
+            "value": "task-2-secure-flows"
+        },
+        {
+            "name": "client_secret",
+            "value": "PASTE_CLIENT_SECRET_FROM_KEYCLOAK_CONFIGURATION_HERE"
+        },
+        {
+            "name": "loginUrl",
+            "value": ""
+        },
+        {
+            "name": "code",
+            "value": ""
+        },
+        {
+            "name": "access_token",
+            "value": ""
+        },
+        {
+            "name": "refresh_token",
+            "value": ""
+        },
+        {
+            "name": "id_token",
+            "value": ""
+        }
+    ]
+}
