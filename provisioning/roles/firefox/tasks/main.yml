@@ -59,6 +59,17 @@
     creates: "{{ firefox_profile_directory }}/cert9.db"
   tags: firefox
 
+- name: Create Firefox policy directory
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "root"
+    group: "root"
+    mode: '0755'
+  loop:
+    - "/etc/firefox/policies/"
+  tags: firefox
+
 # - name: Create policies.json from template
 #   ansible.builtin.template:
 #     src: "{{ config_dir }}/templates/etc_firefox_policies/policies.json.j2"
@@ -67,4 +78,19 @@
 #     mode: '0644'
 #     owner: "root"
 #     group: "root"
-#   tags: firefox
+#   tags:
+#     - firefox
+#     - system-local
+
+# Needed because for cloud vm Ansible is not executed on the local machine
+- name: Create policies.json from template
+  ansible.builtin.template:
+    src: "{{ local_config_dir }}/templates/etc_firefox_policies/policies.json.j2"
+    remote_src: false
+    dest: "/etc/firefox/policies/policies.json"
+    mode: '0644'
+    owner: "root"
+    group: "root"
+  tags:
+    - firefox
+    - system-cloud

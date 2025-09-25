@@ -57,6 +57,20 @@
     - keycloak
     - sso_advanced
 
+- name: Copy Hackmanit CA cert into System Trust Store
+  ansible.builtin.copy:
+    src: "{{ vm_user_details.home }}/.sso_advanced/tls/hackmanit-ca.crt"
+    remote_src: yes
+    dest: /usr/local/share/ca-certificates/
+    owner: root
+    group: root
+    mode: '0644'
+  notify:
+    - firefox update certificates
+  tags:
+    - keycloak
+    - sso_advanced
+
 - name: Copy realms to {{ vm_user_details.home }}/keycloak/
   ansible.builtin.copy:
     src: '{{ vm_user_details.home }}/.sso_advanced/realms'
@@ -148,7 +162,7 @@
   apt:
     pkg:
       - maven
-      - openjdk-17-jdk  # already installed above
+      - openjdk-17-jdk
     state: latest
   tags:
     - sso_advanced
