@@ -16,6 +16,18 @@
   tags:
     - sso_advanced
 
+- name: Copy docker-compose file to .sso_advanced from template
+  ansible.builtin.template:
+    src: "{{ local_config_dir }}/.sso_advanced/templates/docker-compose.yml.j2"
+    remote_src: false
+    dest: "{{ vm_user_details.home }}/.sso_advanced/docker-compose.yml"
+    mode: '0644'
+    owner: "{{ vm_user }}"
+    group: "{{ vm_user_details.group }}"
+  tags:
+    - keycloak
+    - sso_advanced
+
 - name: Create directories for Keycloak
   ansible.builtin.file:
     path: '{{ item }}'
@@ -177,14 +189,3 @@
   tags:
     - sso_advanced
     - task3
-
-# - name: Unconditionally reboot the machine with all defaults
-#   ansible.builtin.reboot:
-
-# - name: Shutdown
-#   ansible.builtin.shutdown:
-#   reboot: no
-#   tags: shutdown
-
-# TODO for sso advanced:
-# - [ ] Replace docker-compose.yml and start_keycloak.sh with templates that work with {{ vm_user }} instead of simply hardcoded "user"

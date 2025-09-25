@@ -1,4 +1,3 @@
-version: '3'
 services:
   postgresql_1:
     image: postgres:16
@@ -20,10 +19,10 @@ services:
       - postgresql_1
     volumes:
       - /etc/localtime:/etc/localtime:ro
-      - /home/user/keycloak_data/providers:/opt/keycloak/providers
-      - /home/user/keycloak/realms:/opt/keycloak/data/import/
-      - /home/user/keycloak/idp.example.crt:/home/user/keycloak/idp.example.crt
-      - /home/user/keycloak/idp.example.key:/home/user/keycloak/idp.example.key
+      - /home/{{ vm_user }}/keycloak_data/providers:/opt/keycloak/providers
+      - /home/{{ vm_user }}/keycloak/realms:/opt/keycloak/data/import/
+      - /home/{{ vm_user }}/keycloak/idp.example.crt:/home/user/keycloak/idp.example.crt
+      - /home/{{ vm_user }}/keycloak/idp.example.key:/home/user/keycloak/idp.example.key
     environment:
       - KC_HOSTNAME=idp.example
       - KC_HOSTNAME_PORT=8443
